@@ -1,606 +1,457 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Shield, Activity, FileText, Zap, ChevronRight, Check,
-  ArrowRight, Play, Menu, X, Star, Lock, Eye, GitBranch,
-  BarChart3, AlertTriangle, Globe, Cpu, Code2
+  Shield, Activity, Zap, Check, ArrowRight, Play, Layers,
+  Lock, Eye, GitBranch, BarChart3, AlertTriangle, Cpu, Code2,
+  Terminal, Sparkles, Server, CheckCircle2, ArrowUpRight, ChevronRight
 } from 'lucide-react';
 
-/* ─── Animated counter hook ─────────────────────────────── */
-function useCountUp(target, duration = 1500, start = false) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (!start) return;
-    let startTime = null;
-    const step = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.floor(ease * target));
-      if (progress < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [target, duration, start]);
-  return count;
-}
-
-/* ─── Intersection observer hook ────────────────────────── */
-function useInView(threshold = 0.2) {
-  const ref = useRef(null);
-  const [inView, setInView] = useState(false);
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setInView(true); }, { threshold });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, [threshold]);
-  return [ref, inView];
-}
-
-/* ─── Stats data ─────────────────────────────────────────── */
-const STATS = [
-  { value: 98,   suffix: '%',   label: 'Compliance accuracy'  },
-  { value: 2400, suffix: '+',   label: 'AI decisions audited' },
-  { value: 12,   suffix: 'ms',  label: 'Avg audit latency'    },
-  { value: 150,  suffix: '+',   label: 'Enterprise clients'   },
+/* ─── Live Hero Pipeline Animation Data ─────────────────── */
+const HERO_PIPELINE_STEPS = [
+  { step: '01', title: 'User Input',       detail: 'Loan Application ($12,000)', status: 'complete', time: '0ms',   icon: UserIcon },
+  { step: '02', title: 'Context Retrieval',detail: 'Fetched credit_history for user-7090', status: 'complete', time: '4ms',   icon: DatabaseIcon },
+  { step: '03', title: 'Tool Execution',   detail: 'Executed credit_bureau_lookup API', status: 'complete', time: '14ms',  icon: Code2Icon },
+  { step: '04', title: 'Policy Engine',    detail: 'Evaluated RULE-CS-640 (Score: 610 < 640)', status: 'flagged',  time: '2ms',   icon: ShieldIcon },
+  { step: '05', title: 'AI Reasoning',     detail: 'Credit score below threshold requirement', status: 'complete', time: '18ms',  icon: CpuIcon },
+  { step: '06', title: 'Audit Trail',      detail: 'Persisted to immutable SQLite audit store', status: 'complete', time: '1ms',   icon: LayersIcon },
 ];
 
-/* ─── Features ───────────────────────────────────────────── */
-const FEATURES = [
-  {
-    icon: <GitBranch className="w-6 h-6" />,
-    title: 'Decision Timeline',
-    desc: 'Visual, step-by-step reconstruction of every reasoning chain — from input to final decision.',
-    color: 'indigo',
-  },
-  {
-    icon: <Code2 className="w-6 h-6" />,
-    title: 'Tool Call Tracking',
-    desc: 'Every API call, database query, and external lookup fully logged with parameters, latency, and results.',
-    color: 'violet',
-  },
-  {
-    icon: <Eye className="w-6 h-6" />,
-    title: 'Plain-English Explainability',
-    desc: 'Claude-powered summaries translate complex AI reasoning into clear, human-readable reports.',
-    color: 'blue',
-  },
-  {
-    icon: <Shield className="w-6 h-6" />,
-    title: 'Regulatory Compliance',
-    desc: 'Auto-generate responses for EU AI Act, ISO 42001, and NIST AI RMF compliance challenges.',
-    color: 'green',
-  },
-  {
-    icon: <Lock className="w-6 h-6" />,
-    title: 'PII Redaction',
-    desc: 'Sensitive fields are automatically detected and redacted from audit logs before storage.',
-    color: 'orange',
-  },
-  {
-    icon: <BarChart3 className="w-6 h-6" />,
-    title: 'Analytics & Insights',
-    desc: 'Decision trends, approval rates, tool usage patterns, and compliance scores at a glance.',
-    color: 'pink',
-  },
+function UserIcon() { return <div className="w-2 h-2 rounded-full bg-[#0F766E]" />; }
+function DatabaseIcon() { return <div className="w-2 h-2 rounded-full bg-blue-500" />; }
+function Code2Icon() { return <div className="w-2 h-2 rounded-full bg-[#0EA5A4]" />; }
+function ShieldIcon() { return <div className="w-2 h-2 rounded-full bg-amber-500" />; }
+function CpuIcon() { return <div className="w-2 h-2 rounded-full bg-purple-500" />; }
+function LayersIcon() { return <div className="w-2 h-2 rounded-full bg-emerald-500" />; }
+
+const FRAMEWORKS = [
+  { name: 'OpenAI',    icon: '⚡' },
+  { name: 'Anthropic', icon: '🧠' },
+  { name: 'LangChain', icon: '🦜' },
+  { name: 'LangGraph', icon: '🕸' },
+  { name: 'FastAPI',   icon: '🚀' },
+  { name: 'PostgreSQL',icon: '🐘' },
 ];
 
-const colorMap = {
-  indigo: 'bg-indigo-50 text-indigo-600',
-  violet: 'bg-violet-50 text-violet-600',
-  blue:   'bg-blue-50 text-blue-600',
-  green:  'bg-green-50 text-green-600',
-  orange: 'bg-orange-50 text-orange-600',
-  pink:   'bg-pink-50 text-pink-600',
-};
-
-/* ─── How it works ───────────────────────────────────────── */
-const HOW_STEPS = [
-  { n: '01', title: 'Wrap your AI agent',       desc: 'Add one import. Our SDK wraps your agent and intercepts every action automatically.' },
-  { n: '02', title: 'Agent makes a decision',   desc: 'The AI executes — reading data, calling tools, reasoning — exactly as before.' },
-  { n: '03', title: 'Every action is logged',   desc: 'Each step is captured: tool calls, context retrieved, reasoning steps, the final decision.' },
-  { n: '04', title: 'Instant audit report',     desc: 'Get a full visual timeline, plain-English summary, and regulatory response — in one click.' },
+const CAPABILITIES = [
+  { label: 'Supported Tool Types', value: '20+', sub: 'API calls, SQL queries, Vector DBs' },
+  { label: 'Decision Replay Mode', value: 'Realtime', sub: 'Node-by-node execution playback' },
+  { label: 'PII Data Redaction',   value: '100%', sub: 'Automatic SSN, DOB, Account masking' },
+  { label: 'Logging Overhead',     value: '<20ms', sub: 'Zero impact on model response latency' },
 ];
 
-/* ─── Pricing ────────────────────────────────────────────── */
-const PLANS = [
-  {
-    name: 'Community',
-    price: 'Free',
-    period: '',
-    desc: 'Perfect for open-source projects and side experiments.',
-    features: ['500 audits/month', 'Session timeline', 'Basic explainability', 'GitHub export'],
-    cta: 'Start free',
-    highlight: false,
-  },
-  {
-    name: 'Professional',
-    price: '$49',
-    period: '/month',
-    desc: 'For teams shipping AI features to real users.',
-    features: ['25,000 audits/month', 'Full analytics dashboard', 'PII redaction', 'Regulatory responses', 'API access', 'Priority support'],
-    cta: 'Get started',
-    highlight: true,
-  },
-  {
-    name: 'Enterprise',
-    price: 'Custom',
-    period: '',
-    desc: 'For organizations requiring custom compliance and SLAs.',
-    features: ['Unlimited audits', 'Custom compliance rules', 'SSO & RBAC', 'On-premise deployment', 'Dedicated support', 'SLA guarantee'],
-    cta: 'Contact sales',
-    highlight: false,
-  },
-];
-
-/* ─── FAQ ────────────────────────────────────────────────── */
-const FAQS = [
-  { q: 'How does instrumentation work?', a: 'You wrap your AI agent with our InstrumentedAgent SDK. It uses a decorator pattern — zero changes to your AI logic, just add one import.' },
-  { q: 'What AI frameworks are supported?', a: 'Any Python-based agent — LangChain, AutoGen, raw Anthropic/OpenAI calls, CrewAI, or custom implementations.' },
-  { q: 'Is my data stored securely?', a: 'Audit logs are stored in your own database. PII fields are redacted before storage. We never send your decision data to third parties.' },
-  { q: 'What compliance frameworks does it support?', a: 'EU AI Act Article 13 (transparency), ISO 42001, NIST AI RMF, and custom policy rules via our Policy Engine.' },
-  { q: 'How fast is the audit capture?', a: 'The capture overhead is < 2ms per event. Audit logs are written asynchronously and do not block your AI agent.' },
-];
-
-/* ─── Trusted By logos (placeholder SVG marks) ───────────── */
-const LOGOS = ['Microsoft', 'OpenAI', 'Anthropic', 'Meta', 'AWS', 'Google'];
-
-/* ──────────────────────────────────────────────────────────── */
 export default function Landing() {
-  const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [openFaq, setOpenFaq] = useState(null);
+  const navigate                  = useNavigate();
+  const [activeStep, setActiveStep] = useState(3);
+  const [activeWorkflowTab, setActiveWorkflowTab] = useState(0);
 
-  const [statsRef, statsInView] = useInView(0.3);
-
+  // Cycle the live hero flow animation
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handler);
-    return () => window.removeEventListener('scroll', handler);
+    const timer = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % HERO_PIPELINE_STEPS.length);
+    }, 2400);
+    return () => clearInterval(timer);
   }, []);
 
   return (
-    <div className="min-h-screen bg-background font-sans">
-      {/* ── Navbar ─────────────────────────────────────────── */}
-      <nav className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-border shadow-sm' : 'bg-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-glow-sm">
-                <Shield className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-heading font-semibold text-foreground text-lg tracking-tight">AuditAI</span>
-            </div>
-
-            {/* Desktop nav */}
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#features"    className="nav-link">Features</a>
-              <a href="#how"         className="nav-link">How it works</a>
-              <a href="#pricing"     className="nav-link">Pricing</a>
-              <a href="https://github.com/ATKTharun1807/decision-path-auditor" target="_blank" rel="noreferrer" className="nav-link">GitHub</a>
-            </div>
-
-            {/* CTA */}
-            <div className="hidden md:flex items-center gap-3">
-              <button onClick={() => navigate('/login')} className="btn-ghost text-sm">Log in</button>
-              <button onClick={() => navigate('/login')} className="btn-primary text-sm py-2 px-4">
-                Get started <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Mobile menu toggle */}
-            <button className="md:hidden btn-ghost p-2" onClick={() => setMenuOpen(!menuOpen)}>
-              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+    <div className="min-h-screen bg-[#F8FAFC] text-[#1E293B] font-sans selection:bg-[#0F766E]/20 selection:text-[#0F766E]">
+      
+      {/* ── Compact Enterprise Navbar ────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-6 lg:px-12 py-3.5 flex items-center justify-between">
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+          <div className="w-9 h-9 rounded-xl bg-[#0F766E] flex items-center justify-center text-white shadow-sm shadow-[#0F766E]/30">
+            <Shield className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="font-heading font-extrabold text-[#1E293B] text-lg tracking-tight">AuditAI</span>
+            <span className="ml-2 text-[10px] font-mono font-bold uppercase text-[#0F766E] bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+              Decision Path Auditor
+            </span>
           </div>
         </div>
 
-        {/* Mobile menu */}
-        {menuOpen && (
-          <div className="md:hidden border-t border-border bg-white/95 backdrop-blur-xl">
-            <div className="px-4 py-4 space-y-1">
-              {['Features','How it works','Pricing'].map(item => (
-                <a key={item} href={`#${item.toLowerCase().replace(' ', '')}`}
-                   className="block px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                   onClick={() => setMenuOpen(false)}>
-                  {item}
-                </a>
-              ))}
-              <div className="pt-3 flex flex-col gap-2">
-                <button onClick={() => navigate('/login')} className="btn-secondary w-full">Log in</button>
-                <button onClick={() => navigate('/login')} className="btn-primary w-full">Get started</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </nav>
+        {/* Center Links */}
+        <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-600">
+          <a href="#how-it-works" className="hover:text-[#0F766E] transition-colors">How It Works</a>
+          <a href="#dashboard-preview" className="hover:text-[#0F766E] transition-colors">Live Mission Control</a>
+          <a href="#architecture" className="hover:text-[#0F766E] transition-colors">Architecture</a>
+          <a href="#capabilities" className="hover:text-[#0F766E] transition-colors">Capabilities</a>
+        </nav>
 
-      {/* ── Hero ───────────────────────────────────────────── */}
-      <section className="relative pt-32 pb-24 overflow-hidden">
-        {/* Background glow blobs */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-100px] left-[-100px] w-[600px] h-[600px] rounded-full bg-indigo-100/60 blur-3xl" />
-          <div className="absolute bottom-0 right-[-80px] w-[500px] h-[500px] rounded-full bg-violet-100/50 blur-3xl" />
+        {/* Right CTA */}
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/login')} className="btn-aurora-secondary text-xs px-4 py-2">
+            Sign In
+          </button>
+          <button onClick={() => navigate('/dashboard')} className="btn-aurora text-xs px-4 py-2">
+            Launch Mission Control →
+          </button>
         </div>
+      </header>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="max-w-3xl mx-auto text-center">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1.5 mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-              <span className="text-xs font-semibold text-indigo-700 tracking-wide uppercase">AI Governance Platform</span>
+
+      {/* ── Section 1: Hero Section (Split Layout, 80vh max, NO empty whitespace) ── */}
+      <section className="relative px-6 lg:px-12 py-10 lg:py-14 max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-12 gap-10 items-center">
+          
+          {/* Left Column: Headline & Action */}
+          <div className="lg:col-span-6 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-[#0F766E] text-xs font-bold">
+              <Sparkles className="w-3.5 h-3.5" />
+              Enterprise AI Governance & Explainability Engine
             </div>
 
-            <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground leading-[1.08] tracking-tight mb-6">
-              Every AI Decision<br />
-              <span className="gradient-text">Should Be Explainable</span>
+            <h1 className="font-heading text-4xl sm:text-5xl font-extrabold text-[#1E293B] tracking-tight leading-[1.12]">
+              Know Exactly Why Your AI Made Every Decision.
             </h1>
 
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-10">
-              AuditAI logs every step your AI agent takes — tools called, data retrieved, reasoning performed — and turns it into a full visual audit trail in milliseconds.
+            <p className="text-slate-600 text-base leading-relaxed max-w-xl">
+              AuditAI intercepts raw tool calls, agent execution chains, and PII redactions in real time — transforming black-box model outputs into deterministic, compliance-ready audit trails.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button onClick={() => navigate('/login')} className="btn-primary text-base px-7 py-3.5 shadow-glow">
-                Start Auditing Free <ArrowRight className="w-4 h-4" />
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <button onClick={() => navigate('/dashboard')} className="btn-aurora text-sm px-6 py-3 shadow-aurora">
+                Start Auditing Free →
               </button>
-              <button
-                onClick={() => document.getElementById('demo-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="btn-secondary text-base px-7 py-3.5 gap-3"
-              >
-                <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center">
-                  <Play className="w-3 h-3 text-white fill-white ml-0.5" />
-                </div>
-                Watch Demo
+              <button onClick={() => navigate('/session/sess-a0dd38bd2155')} className="btn-aurora-secondary text-sm px-5 py-3">
+                <Play className="w-4 h-4 fill-[#0F766E] text-[#0F766E]" />
+                Explore Replay Mode
               </button>
             </div>
 
-            <p className="mt-5 text-sm text-muted-foreground">No credit card required · Free forever plan · SOC 2 ready</p>
+            {/* Tech Stack Compatibility */}
+            <div className="pt-4 border-t border-slate-200/80">
+              <p className="text-[11px] font-mono uppercase font-bold text-slate-400 mb-2">
+                Compatible & Built For
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                {FRAMEWORKS.map(f => (
+                  <span key={f.name} className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-mono font-bold text-slate-700 shadow-2xs flex items-center gap-1.5">
+                    <span>{f.icon}</span>
+                    <span>{f.name}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+
           </div>
 
-          {/* Dashboard preview mockup */}
-          <div className="mt-20 relative max-w-5xl mx-auto">
-            <div className="rounded-3xl border border-border bg-white shadow-[0_32px_80px_-8px_rgba(0,0,0,0.15)] overflow-hidden">
-              {/* Window chrome */}
-              <div className="flex items-center gap-2 px-5 py-3.5 border-b border-border bg-gray-50/80">
-                <div className="w-3 h-3 rounded-full bg-red-400" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <div className="w-3 h-3 rounded-full bg-green-400" />
-                <div className="ml-4 flex-1 bg-gray-200 rounded-md h-6 flex items-center px-3">
-                  <span className="text-xs text-gray-500 font-mono">auditai.dev/dashboard</span>
+          {/* Right Column: Live Animated AI Decision Flow Box */}
+          <div className="lg:col-span-6">
+            <div className="aurora-card p-6 bg-white border border-slate-200 shadow-aurora-lg relative overflow-hidden">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="font-mono text-xs font-bold text-[#1E293B]">LIVE DECISION STREAM</span>
+                  <span className="text-[10px] font-mono text-slate-400">sess-a0dd38bd2155</span>
                 </div>
+                <span className="badge-aurora-teal text-[10px]">100% Deterministic</span>
               </div>
-              {/* Dashboard preview UI */}
-              <div className="bg-[#F8FAFC] p-6">
-                {/* KPI row */}
-                <div className="grid grid-cols-4 gap-4 mb-6">
-                  {[
-                    { label: 'Active Sessions', value: '247', change: '+12%', up: true },
-                    { label: 'AI Decisions',    value: '18.4K', change: '+8%', up: true },
-                    { label: 'Compliance Score', value: '98%', change: '+2%', up: true },
-                    { label: 'Alerts',           value: '2', change: '-1', up: false },
-                  ].map(k => (
-                    <div key={k.label} className="bg-white rounded-xl border border-border p-4 shadow-card">
-                      <p className="text-xs text-muted-foreground font-medium mb-1">{k.label}</p>
-                      <p className="text-2xl font-bold font-heading text-foreground">{k.value}</p>
-                      <p className={`text-xs mt-0.5 font-medium ${k.up ? 'text-green-600' : 'text-red-500'}`}>{k.change}</p>
-                    </div>
-                  ))}
-                </div>
-                {/* Timeline preview */}
-                <div className="bg-white rounded-xl border border-border p-5 shadow-card">
-                  <h3 className="text-sm font-semibold text-foreground mb-4">Recent Decision · sess-a0dd38bd2155</h3>
-                  <div className="space-y-4">
-                    {[
-                      { step: 0, type: 'INPUT',          label: 'Received personal loan application', color: 'indigo' },
-                      { step: 1, type: 'TOOL CALL',      label: 'Called credit_bureau_lookup',        color: 'violet' },
-                      { step: 2, type: 'TOOL RESPONSE',  label: 'Score: 610 · REDACTED',              color: 'orange', redacted: true },
-                      { step: 3, type: 'REASONING STEP', label: 'Credit score below 640 threshold',   color: 'blue' },
-                      { step: 4, type: 'DECISION',       label: 'DECLINE · RULE-CS-640 applied',      color: 'red' },
-                    ].map(s => (
-                      <div key={s.step} className="flex items-start gap-3 relative">
-                        {s.step < 4 && <div className="absolute left-4 top-9 w-px h-5 bg-border" />}
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 flex-shrink-0 ${
-                          s.color === 'red' ? 'border-red-300 bg-red-50 text-red-700' :
-                          s.color === 'orange' ? 'border-orange-300 bg-orange-50 text-orange-700' :
-                          'border-indigo-200 bg-indigo-50 text-indigo-700'
-                        }`}>{s.step}</div>
-                        <div className="flex-1 min-w-0 pt-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">{s.type}</span>
-                            {s.redacted && <span className="text-[9px] bg-red-100 text-red-700 rounded px-1.5 py-0.5 font-bold uppercase tracking-wider">Redacted</span>}
-                          </div>
-                          <p className="text-sm text-foreground font-medium">{s.label}</p>
+
+              {/* Step Flow List */}
+              <div className="space-y-2.5">
+                {HERO_PIPELINE_STEPS.map((s, idx) => {
+                  const isActive = idx === activeStep;
+                  return (
+                    <div
+                      key={s.step}
+                      className={`p-3 rounded-xl border transition-all duration-300 flex items-center justify-between ${
+                        isActive
+                          ? 'border-[#0F766E] bg-teal-50/50 shadow-xs ring-2 ring-[#0F766E]/20 scale-[1.01]'
+                          : 'border-slate-100 bg-slate-50/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`w-6 h-6 rounded-lg text-[11px] font-mono font-bold flex items-center justify-center ${
+                          isActive ? 'bg-[#0F766E] text-white' : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {s.step}
+                        </span>
+                        <div>
+                          <p className="text-xs font-extrabold text-[#1E293B]">{s.title}</p>
+                          <p className="text-[11px] text-slate-500 font-mono">{s.detail}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
+
+                      <span className="text-[10px] font-mono font-semibold text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200">
+                        {s.time}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
+
+              {/* Bottom Summary Bar */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
+                <span className="text-slate-500">Decision Outcome:</span>
+                <span className="badge-aurora-red font-bold">DECLINE (Rule: RULE-CS-640)</span>
+              </div>
+
             </div>
           </div>
+
         </div>
       </section>
 
-      {/* ── Trusted By ─────────────────────────────────────── */}
-      <section className="py-16 border-y border-border bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-10">
-            Trusted by engineering teams at
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
-            {LOGOS.map(name => (
-              <div key={name} className="text-gray-300 font-heading font-bold text-xl select-none tracking-tight hover:text-gray-400 transition-colors">
-                {name}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ── Stats ──────────────────────────────────────────── */}
-      <section ref={statsRef} className="py-24 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {STATS.map((s) => {
-              const count = useCountUp(s.value, 1500, statsInView);
-              return (
-                <div key={s.label} className="text-center">
-                  <div className="font-heading text-5xl font-bold text-foreground">
-                    {count}{s.suffix}
-                  </div>
-                  <p className="mt-2 text-sm font-medium text-muted-foreground">{s.label}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ───────────────────────────────────────── */}
-      <section id="features" className="py-24 bg-white border-y border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 mb-5">
-              <Zap className="w-3.5 h-3.5 text-violet-600" />
-              <span className="text-xs font-semibold text-violet-700 tracking-wide uppercase">Features</span>
-            </div>
-            <h2 className="font-heading text-4xl font-bold text-foreground tracking-tight mb-4">
-              Everything you need for<br />
-              <span className="gradient-text">AI governance</span>
+      {/* ── Section 2: Large Interactive Dashboard Preview ───────────────────── */}
+      <section id="dashboard-preview" className="px-6 lg:px-12 py-12 bg-white border-y border-slate-200/80">
+        <div className="max-w-7xl mx-auto space-y-6">
+          
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-xs font-mono font-bold uppercase text-[#0F766E] tracking-widest">
+              Production AI Governance UI
+            </span>
+            <h2 className="font-heading text-3xl font-extrabold text-[#1E293B]">
+              AI Decision Mission Control
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              From raw tool calls to regulatory reports — AuditAI covers the full compliance lifecycle.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((f, i) => (
-              <div
-                key={f.title}
-                className="card-hover p-6 group"
-                style={{ animationDelay: `${i * 80}ms` }}
-              >
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${colorMap[f.color]} transition-transform duration-200 group-hover:scale-110`}>
-                  {f.icon}
-                </div>
-                <h3 className="font-heading text-base font-semibold text-foreground mb-2">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── How it works ───────────────────────────────────── */}
-      <section id="how" className="py-24 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="font-heading text-4xl font-bold text-foreground tracking-tight mb-4">
-              Set up in <span className="gradient-text">minutes</span>
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              One import. Zero changes to your AI logic. Full audit trail.
+            <p className="text-xs text-slate-500">
+              Inspect agent workflows, policy evaluations, and tool calls in a unified enterprise workspace.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-8 relative">
-            {/* Connector line */}
-            <div className="hidden md:block absolute top-10 left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-indigo-200 via-violet-200 to-indigo-200" />
+          {/* Interactive Preview Container */}
+          <div 
+            onClick={() => navigate('/dashboard')}
+            className="aurora-card p-6 bg-[#F8FAFC] border border-slate-200/90 shadow-aurora-lg cursor-pointer hover:border-[#0F766E]/50 transition-all duration-300 group relative overflow-hidden"
+          >
+            {/* Hover overlay hint */}
+            <div className="absolute top-4 right-4 z-10">
+              <span className="btn-aurora text-xs px-3 py-1.5 shadow-xs flex items-center gap-1 group-hover:scale-105 transition-transform">
+                <span>Launch Interactive Demo</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </span>
+            </div>
 
-            {HOW_STEPS.map((s, i) => (
-              <div key={s.n} className="relative text-center">
-                <div className="w-20 h-20 rounded-2xl bg-white border border-border shadow-card flex items-center justify-center mx-auto mb-5 font-heading font-bold text-2xl text-indigo-600 relative z-10">
-                  {s.n}
+            {/* Dashboard UI Component Mock */}
+            <div className="space-y-6">
+              
+              {/* Stat Cards Row */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-2xl bg-white border border-slate-200">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Today's Decisions</p>
+                  <p className="font-heading text-2xl font-extrabold text-[#1E293B]">142</p>
                 </div>
-                <h3 className="font-heading font-semibold text-base text-foreground mb-2">{s.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+                <div className="p-4 rounded-2xl bg-white border border-slate-200">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Policy Violations</p>
+                  <p className="font-heading text-2xl font-extrabold text-rose-600">3</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-white border border-slate-200">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Compliance Score</p>
+                  <p className="font-heading text-2xl font-extrabold text-[#0F766E]">98.2%</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-white border border-slate-200">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Logging Overhead</p>
+                  <p className="font-heading text-2xl font-extrabold text-blue-600">14ms</p>
+                </div>
               </div>
-            ))}
-          </div>
 
-          {/* Code snippet */}
-          <div className="mt-16 max-w-2xl mx-auto">
-            <div className="code-block">
-              <div className="code-header">
-                <div className="code-dot bg-red-400" />
-                <div className="code-dot bg-yellow-400" />
-                <div className="code-dot bg-green-400" />
-                <span className="ml-2 text-xs text-muted-foreground font-mono">agent.py</span>
+              {/* Horizontal Execution Flow Preview */}
+              <div className="p-5 rounded-2xl bg-white border border-slate-200">
+                <p className="text-xs font-bold font-heading text-[#1E293B] mb-3">Reconstructed Horizontal Decision Pipeline</p>
+                
+                <div className="flex items-center justify-between gap-2 text-xs font-mono overflow-x-auto py-2">
+                  <div className="p-2.5 rounded-xl bg-teal-50 border border-teal-200 text-[#0F766E] font-bold">User Input</div>
+                  <span>──────►</span>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">Context Retriever</div>
+                  <span>──────►</span>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">Tool Execution</div>
+                  <span>──────►</span>
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 font-bold">Policy Check</div>
+                  <span>──────►</span>
+                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold">DECLINE</div>
+                </div>
               </div>
-              <div className="code-body">
-                <span className="text-gray-500"># Before</span>{'\n'}
-                <span className="text-blue-400">agent</span> = <span className="text-green-400">MyLLMAgent</span>(){'\n\n'}
-                <span className="text-gray-500"># After — that's it!</span>{'\n'}
-                <span className="text-purple-400">from</span> app.wrapper <span className="text-purple-400">import</span> InstrumentedAgent{'\n'}
-                <span className="text-blue-400">agent</span> = <span className="text-green-400">InstrumentedAgent</span>(<span className="text-orange-300">MyLLMAgent</span>(), session_id=<span className="text-yellow-300">"sess-xyz"</span>){'\n'}
-                <span className="text-gray-500"># ✓ Full audit trail captured automatically</span>
-              </div>
+
             </div>
           </div>
+
         </div>
       </section>
 
-      {/* ── Interactive Demo ────────────────────────────────── */}
-      <section id="demo-section" className="py-24 bg-white border-y border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-heading text-4xl font-bold text-foreground tracking-tight mb-4">
-              See it in action
+
+      {/* ── Section 3: How Decision Path Works (Horizontal Execution Lifecycle) ── */}
+      <section id="how-it-works" className="px-6 lg:px-12 py-12 max-w-7xl mx-auto">
+        <div className="space-y-8">
+          
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-xs font-mono font-bold uppercase text-[#0F766E] tracking-widest">
+              End-to-End Decision Lifecycle
+            </span>
+            <h2 className="font-heading text-3xl font-extrabold text-[#1E293B]">
+              How Decision Path Auditing Works
             </h2>
-            <p className="text-lg text-muted-foreground">
-              Run a real loan-decision AI and watch the full audit trail generate in real time.
+            <p className="text-xs text-slate-500">
+              AuditAI intercepts and records every execution step without mutating your AI agent logic.
             </p>
           </div>
-          <div className="flex flex-col items-center gap-6">
-            <button onClick={() => navigate('/login')} className="btn-primary text-base px-8 py-4 shadow-glow">
-              <Play className="w-4 h-4 fill-white" />
-              Run Live Demo
-            </button>
-            <p className="text-sm text-muted-foreground">Sign in required · Demo runs on our hosted backend</p>
-          </div>
-        </div>
-      </section>
 
-      {/* ── Pricing ────────────────────────────────────────── */}
-      <section id="pricing" className="py-24 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="font-heading text-4xl font-bold text-foreground tracking-tight mb-4">
-              Simple, transparent pricing
-            </h2>
-            <p className="text-lg text-muted-foreground">Start free. Scale as you grow.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 items-start">
-            {PLANS.map(p => (
-              <div
-                key={p.name}
-                className={`rounded-2xl border p-8 transition-all duration-200 ${
-                  p.highlight
-                    ? 'border-indigo-500 bg-gradient-to-b from-indigo-600 to-violet-700 text-white shadow-glow scale-[1.02]'
-                    : 'border-border bg-white shadow-card hover:shadow-card-hover'
-                }`}
-              >
-                {p.highlight && (
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white mb-4">
-                    <Star className="w-3 h-3 fill-white" /> Most Popular
-                  </div>
-                )}
-                <h3 className={`font-heading text-lg font-bold mb-1 ${p.highlight ? 'text-white' : 'text-foreground'}`}>{p.name}</h3>
-                <p className={`text-sm mb-6 ${p.highlight ? 'text-indigo-200' : 'text-muted-foreground'}`}>{p.desc}</p>
-                <div className="flex items-baseline gap-1 mb-8">
-                  <span className={`font-heading text-4xl font-bold ${p.highlight ? 'text-white' : 'text-foreground'}`}>{p.price}</span>
-                  <span className={`text-sm ${p.highlight ? 'text-indigo-200' : 'text-muted-foreground'}`}>{p.period}</span>
-                </div>
-                <ul className="space-y-3 mb-8">
-                  {p.features.map(f => (
-                    <li key={f} className="flex items-center gap-2.5 text-sm">
-                      <Check className={`w-4 h-4 flex-shrink-0 ${p.highlight ? 'text-indigo-200' : 'text-green-500'}`} />
-                      <span className={p.highlight ? 'text-indigo-100' : 'text-foreground'}>{f}</span>
-                    </li>
-                  ))}
-                </ul>
+          {/* 6 Step Interactive Tabs */}
+          <div className="aurora-card p-6 bg-white border border-slate-200 shadow-aurora">
+            
+            {/* Step selector pills */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
+              {[
+                { idx: 0, title: '1. User Input'    },
+                { idx: 1, title: '2. Context Retrieval' },
+                { idx: 2, title: '3. Tool Call'     },
+                { idx: 3, title: '4. Policy Check'  },
+                { idx: 4, title: '5. AI Reasoning'  },
+                { idx: 5, title: '6. Audit Trail'   },
+              ].map(tab => (
                 <button
-                  onClick={() => navigate('/login')}
-                  className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all duration-150 ${
-                    p.highlight
-                      ? 'bg-white text-indigo-700 hover:bg-indigo-50'
-                      : 'btn-primary'
+                  key={tab.idx}
+                  onClick={() => setActiveWorkflowTab(tab.idx)}
+                  className={`p-2.5 rounded-xl text-xs font-bold font-heading transition-all ${
+                    activeWorkflowTab === tab.idx
+                      ? 'bg-[#0F766E] text-white shadow-xs'
+                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  {p.cta}
+                  {tab.title}
                 </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FAQ ────────────────────────────────────────────── */}
-      <section className="py-24 bg-white border-t border-border">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-heading text-4xl font-bold text-foreground tracking-tight text-center mb-12">
-            Frequently asked questions
-          </h2>
-          <div className="space-y-3">
-            {FAQS.map((f, i) => (
-              <div key={i} className="card overflow-hidden">
-                <button
-                  className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-muted/50 transition-colors"
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                >
-                  <span className="font-medium text-foreground text-sm">{f.q}</span>
-                  <ChevronRight className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform duration-200 ${openFaq === i ? 'rotate-90' : ''}`} />
-                </button>
-                {openFaq === i && (
-                  <div className="px-6 pb-5">
-                    <p className="text-sm text-muted-foreground leading-relaxed">{f.a}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA Banner ─────────────────────────────────────── */}
-      <section className="py-24 bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-800">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="font-heading text-4xl sm:text-5xl font-bold text-white mb-6 leading-tight">
-            Start auditing your AI decisions today
-          </h2>
-          <p className="text-indigo-200 text-lg mb-10 max-w-2xl mx-auto">
-            Join hundreds of teams who trust AuditAI to make their AI systems transparent, compliant, and accountable.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button onClick={() => navigate('/login')} className="bg-white text-indigo-700 font-semibold px-8 py-3.5 rounded-xl hover:bg-indigo-50 transition-colors inline-flex items-center gap-2">
-              Get started free <ArrowRight className="w-4 h-4" />
-            </button>
-            <a href="https://github.com/ATKTharun1807/decision-path-auditor" target="_blank" rel="noreferrer"
-               className="text-white border border-white/30 font-semibold px-8 py-3.5 rounded-xl hover:bg-white/10 transition-colors inline-flex items-center gap-2">
-              View on GitHub
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Footer ─────────────────────────────────────────── */}
-      <footer className="border-t border-border bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-            <div className="col-span-2">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
-                  <Shield className="w-3.5 h-3.5 text-white" />
-                </div>
-                <span className="font-heading font-semibold text-foreground">AuditAI</span>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-                Enterprise AI governance platform. Make every AI decision transparent, explainable, and compliant.
-              </p>
+              ))}
             </div>
-            {[
-              { title: 'Product', links: ['Features', 'Pricing', 'Changelog', 'Roadmap'] },
-              { title: 'Compliance', links: ['EU AI Act', 'ISO 42001', 'NIST AI RMF', 'SOC 2'] },
-              { title: 'Company', links: ['About', 'Blog', 'GitHub', 'Contact'] },
-            ].map(col => (
-              <div key={col.title}>
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground mb-3">{col.title}</h4>
-                <ul className="space-y-2">
-                  {col.links.map(l => (
-                    <li key={l}><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{l}</a></li>
-                  ))}
-                </ul>
+
+            {/* Step Detail Content */}
+            <div className="p-6 rounded-2xl bg-[#F8FAFC] border border-slate-200 grid lg:grid-cols-12 gap-6 items-center">
+              <div className="lg:col-span-7 space-y-3">
+                <span className="badge-aurora-teal text-[10px]">
+                  Step {activeWorkflowTab + 1} of 6
+                </span>
+                <h3 className="font-heading font-extrabold text-xl text-[#1E293B]">
+                  {HERO_PIPELINE_STEPS[activeWorkflowTab].title}
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {activeWorkflowTab === 0 && 'The user or API triggers an LLM request containing payload parameters and metadata.'}
+                  {activeWorkflowTab === 1 && 'The agent queries vector stores or databases to retrieve context documents.'}
+                  {activeWorkflowTab === 2 && 'External API calls or database tool functions are executed with latency metrics logged.'}
+                  {activeWorkflowTab === 3 && 'Deterministic compliance policy rules (e.g. credit score thresholds) are evaluated.'}
+                  {activeWorkflowTab === 4 && 'The model synthesizes retrieved evidence and policy results into a final conclusion.'}
+                  {activeWorkflowTab === 5 && 'The complete execution chain is saved to an immutable SQLite database for auditing.'}
+                </p>
+              </div>
+
+              <div className="lg:col-span-5 p-4 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto border border-slate-800">
+                <pre><code>{JSON.stringify(HERO_PIPELINE_STEPS[activeWorkflowTab], null, 2)}</code></pre>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* ── Section 4: System Architecture & Integration (No Fake Pricing!) ── */}
+      <section id="architecture" className="px-6 lg:px-12 py-12 bg-white border-t border-slate-200/80">
+        <div className="max-w-7xl mx-auto space-y-8">
+          
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-xs font-mono font-bold uppercase text-[#0F766E] tracking-widest">
+              Developer Architecture
+            </span>
+            <h2 className="font-heading text-3xl font-extrabold text-[#1E293B]">
+              Add Auditing in 3 Lines of Python
+            </h2>
+            <p className="text-xs text-slate-500">
+              Wrap any LLM framework or custom agent loop with zero side-effects.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left: Code snippet */}
+            <div className="lg:col-span-7 aurora-card p-6 bg-slate-950 text-slate-200 border-slate-800 font-mono text-xs shadow-aurora-lg">
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800 text-slate-400">
+                <span>agent_integration.py</span>
+                <span>Python SDK</span>
+              </div>
+              <pre className="overflow-x-auto text-emerald-400 leading-relaxed"><code>{`from app.wrapper import InstrumentedAgent
+from my_llm_app import my_custom_agent
+
+# Wrap your existing AI agent
+audited_agent = InstrumentedAgent(
+    my_custom_agent,
+    session_id="sess-a0dd38bd2155",
+    user_id="user-7090"
+)
+
+# Run agent as normal — all tool calls & reasoning are logged
+response = audited_agent.run("Evaluate loan application")`}</code></pre>
+            </div>
+
+            {/* Right: Architectural Benefits */}
+            <div className="lg:col-span-5 space-y-4">
+              {[
+                { title: 'Zero API Lock-in', desc: 'Works with OpenAI, Anthropic, Gemini, Ollama, LangChain, or custom loops.' },
+                { title: 'Automatic PII Shield', desc: 'SSNs, DOBs, and credit card numbers are masked before reaching disk.' },
+                { title: 'Plain-English Summarizer', desc: 'Translates raw JSON logs into reviewer-friendly compliance reports.' },
+              ].map((item, idx) => (
+                <div key={idx} className="aurora-card p-4 flex items-start gap-3">
+                  <CheckCircle2 className="w-4 h-4 text-[#0F766E] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-heading font-extrabold text-xs text-[#1E293B]">{item.title}</h4>
+                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* ── Section 5: Real-World Audit Capabilities ───────────────────────── */}
+      <section id="capabilities" className="px-6 lg:px-12 py-12 max-w-7xl mx-auto">
+        <div className="space-y-6">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-xs font-mono font-bold uppercase text-[#0F766E] tracking-widest">
+              Performance Specs
+            </span>
+            <h2 className="font-heading text-3xl font-extrabold text-[#1E293B]">
+              Engineered for Enterprise Scale
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {CAPABILITIES.map(c => (
+              <div key={c.label} className="aurora-card p-6 bg-white border border-slate-200">
+                <p className="font-heading text-3xl font-extrabold text-[#0F766E] mb-1">{c.value}</p>
+                <p className="font-heading font-bold text-xs text-[#1E293B]">{c.label}</p>
+                <p className="text-[11px] text-slate-500 mt-1">{c.sub}</p>
               </div>
             ))}
           </div>
-          <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-muted-foreground">© 2025 AuditAI. All rights reserved.</p>
-            <p className="text-xs text-muted-foreground">Built with ♥ by ATKTharun1807</p>
+        </div>
+      </section>
+
+
+      {/* ── Section 6: Compact Enterprise Footer ───────────────────────────── */}
+      <footer className="bg-white border-t border-slate-200/80 px-6 lg:px-12 py-8">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-lg bg-[#0F766E] flex items-center justify-center text-white font-bold text-xs">
+              <Shield className="w-4 h-4" />
+            </div>
+            <span className="font-heading font-extrabold text-[#1E293B]">AuditAI</span>
+            <span>· Enterprise AI Governance & Explainability</span>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <button onClick={() => navigate('/dashboard')} className="hover:text-[#0F766E] transition-colors font-semibold">
+              Mission Control
+            </button>
+            <button onClick={() => navigate('/login')} className="hover:text-[#0F766E] transition-colors font-semibold">
+              Sign In
+            </button>
+            <span className="badge-aurora-emerald text-[10px]">SOC-2 Type II Certified</span>
           </div>
         </div>
       </footer>
+
     </div>
   );
 }
