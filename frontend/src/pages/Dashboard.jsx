@@ -1,22 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
-  Shield, Search, Play, LogOut, Bell, Settings, BarChart3,
-  Clock, TrendingUp, AlertTriangle, CheckCircle, Activity,
-  ChevronRight, ArrowUpRight, Zap, Database, Cpu
+  Search, Play, TrendingUp, AlertTriangle, CheckCircle, Activity,
+  ChevronRight, ArrowUpRight, Zap, Cpu
 } from 'lucide-react';
+import AppLayout from '../components/AppLayout';
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
-
-/* ─── Sidebar ────────────────────────────────────────────── */
-const NAV = [
-  { icon: BarChart3, label: 'Dashboard',   path: '/dashboard', active: true  },
-  { icon: Clock,     label: 'Sessions',    path: '/dashboard', active: false },
-  { icon: Activity,  label: 'Analytics',  path: '/dashboard', active: false },
-  { icon: Shield,    label: 'Policies',   path: '/dashboard', active: false },
-  { icon: Settings,  label: 'Settings',   path: '/dashboard', active: false },
-];
 
 /* ─── KPI cards ──────────────────────────────────────────── */
 const KPI_CARDS = [
@@ -117,11 +108,6 @@ export default function Dashboard() {
     return () => clearInterval(t);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/');
-  };
-
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -163,74 +149,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* ── Sidebar ──────────────────────────────────────── */}
-      <aside className="w-60 flex-shrink-0 border-r border-border bg-white flex flex-col sticky top-0 h-screen">
-        {/* Logo */}
-        <div className="px-5 py-5 border-b border-border">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-glow-sm">
-              <Shield className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-heading font-semibold text-foreground tracking-tight">AuditAI</span>
-          </div>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {NAV.map(item => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.label}
-                onClick={() => {}}
-                className={item.active ? 'sidebar-link-active w-full text-left' : 'sidebar-link w-full text-left'}
-              >
-                <Icon className="w-4 h-4 flex-shrink-0" />
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* User card */}
-        <div className="px-3 py-4 border-t border-border">
-          <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-muted transition-colors cursor-pointer">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-              T
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">Tharun</p>
-              <p className="text-xs text-muted-foreground truncate">Admin</p>
-            </div>
-            <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors p-1" title="Logout">
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* ── Main content ─────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Topbar */}
-        <header className="h-16 border-b border-border bg-white/80 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-40">
-          <div>
-            <h1 className="font-heading font-semibold text-foreground text-base">Overview</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mr-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              Last synced {time.toLocaleTimeString()}
-            </div>
-            <button className="btn-ghost p-2 relative">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
-            </button>
-            <button className="btn-ghost p-2"><Settings className="w-4 h-4" /></button>
-          </div>
-        </header>
-
-        <main className="flex-1 p-6 lg:p-8 overflow-auto">
+    <AppLayout title="Overview">
           {/* Greeting */}
           <div className="mb-8">
             <h2 className="font-heading text-2xl font-bold text-foreground mb-1">
@@ -384,7 +303,7 @@ export default function Dashboard() {
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="font-heading font-semibold text-foreground">Recent Sessions</h3>
-              <button className="text-sm text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-1">
+              <button onClick={() => navigate('/sessions')} className="text-sm text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-1">
                 View all <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -432,8 +351,6 @@ export default function Dashboard() {
               </table>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+    </AppLayout>
   );
 }
