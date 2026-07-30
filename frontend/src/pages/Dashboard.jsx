@@ -68,6 +68,25 @@ export default function Dashboard() {
     }
   };
 
+  const generate50Demo = async () => {
+    setDemoLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API_BASE_URL}/demo/generate`, {}, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.data?.sample_sessions?.length > 0) {
+        navigate(`/session/${res.data.sample_sessions[0].session_id}`);
+      } else {
+        navigate('/sessions');
+      }
+    } catch {
+      navigate('/sessions');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
   return (
     <AppLayout title="AI Mission Control">
       
@@ -85,6 +104,10 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button onClick={generate50Demo} disabled={demoLoading} className="btn-aurora-secondary text-xs px-4 py-2.5 flex items-center gap-2">
+              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+              <span>Generate 50 Demo Sessions</span>
+            </button>
             <button onClick={runDemo} disabled={demoLoading} className="btn-aurora text-xs px-4 py-2.5">
               {demoLoading ? (
                 <span className="flex items-center gap-2">
