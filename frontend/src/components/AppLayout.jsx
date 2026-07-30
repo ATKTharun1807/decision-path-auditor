@@ -2,48 +2,68 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Shield, LogOut, Bell, Settings, BarChart3,
-  Clock, Activity, X, CheckCircle, AlertTriangle, Info
+  Clock, Activity, X, CheckCircle, AlertTriangle, Info,
+  Command, Sparkles, User, Search, MessageSquare, Bot, ArrowRight,
+  FolderGit2, Cpu, Sliders, Play, Terminal
 } from 'lucide-react';
 
-/* ─── Nav items ─────────────────────────────────────────── */
+/* ─── Aurora Command Center Navigation ─────────────────── */
 const NAV = [
-  { icon: BarChart3, label: 'Dashboard', path: '/dashboard'  },
-  { icon: Clock,     label: 'Sessions',  path: '/sessions'   },
-  { icon: Activity,  label: 'Analytics', path: '/analytics'  },
-  { icon: Shield,    label: 'Policies',  path: '/policies'   },
-  { icon: Settings,  label: 'Settings',  path: '/settings'   },
+  { icon: '🏠', label: 'Dashboard',     path: '/dashboard'  },
+  { icon: '🧠', label: 'Decision Flow', path: '/session/sess-a0dd38bd2155' },
+  { icon: '📂', label: 'Sessions',      path: '/sessions'   },
+  { icon: '🔍', label: 'Explorer',      path: '/session/sess-a0dd38bd2155' },
+  { icon: '📊', label: 'Analytics',     path: '/analytics'  },
+  { icon: '🛡', label: 'Policies',      path: '/policies'   },
+  { icon: '🤖', label: 'AI Agents',     path: '/analytics'  },
+  { icon: '⚙', label: 'Settings',      path: '/settings'   },
 ];
 
 /* ─── Mock notifications ─────────────────────────────────── */
 const NOTIFICATIONS = [
-  { id: 1, type: 'alert',   title: 'High-risk decision detected',        body: 'sess-a0dd38bd2155 flagged as high risk.',     time: '2m ago',  read: false },
-  { id: 2, type: 'alert',   title: 'Compliance threshold breached',      body: 'NIST AI RMF score dropped below 85%.',       time: '18m ago', read: false },
-  { id: 3, type: 'success', title: 'Demo agent completed',               body: 'sess-8b9487775caf audit trail generated.',   time: '1h ago',  read: true  },
-  { id: 4, type: 'info',    title: 'New policy RULE-INC-220 published',  body: 'Income verification threshold updated.',     time: '3h ago',  read: true  },
+  { id: 1, type: 'alert',   title: 'High-risk decision detected',        body: 'sess-a0dd38bd2155 flagged: Credit score below threshold.', time: '2m ago',  read: false },
+  { id: 2, type: 'alert',   title: 'Policy RULE-CS-640 triggered',       body: 'Loan approval declined automatically.',                    time: '18m ago', read: false },
+  { id: 3, type: 'success', title: 'Model Gemini-1.5 Pro synchronized',  body: 'Decision audit stream active.',                            time: '1h ago',  read: true  },
+  { id: 4, type: 'info',    title: 'New policy version published',       body: 'RULE-INC-220 updated by Tharun.',                           time: '3h ago',  read: true  },
 ];
 
-const notifIcon = {
-  alert:   <AlertTriangle className="w-4 h-4 text-red-500" />,
-  success: <CheckCircle className="w-4 h-4 text-green-500" />,
-  info:    <Info className="w-4 h-4 text-indigo-500" />,
-};
-
 /* ──────────────────────────────────────────────────────────── */
-export default function AppLayout({ children, title = 'Overview' }) {
+export default function AppLayout({ children, title = 'AI Mission Control' }) {
   const navigate  = useNavigate();
   const location  = useLocation();
   const [time, setTime]           = useState(new Date());
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifs, setNotifs]       = useState(NOTIFICATIONS);
-  const notifRef                  = useRef(null);
-  const unread                    = notifs.filter(n => !n.read).length;
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Floating AI Assistant State
+  const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
+  const [aiPrompt, setAiPrompt]               = useState('');
+  const [chatMessages, setChatMessages]       = useState([
+    { role: 'assistant', text: 'Hello Tharun! Ask me anything about your AI decision stream, e.g., "Show rejected sessions today" or "Which policy failed most?"' }
+  ]);
+
+  const notifRef  = useRef(null);
+  const unread    = notifs.filter(n => !n.read).length;
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
-  // Close notification panel on outside click
+  // Keyboard shortcut ⌘K / Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   useEffect(() => {
     const handler = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) {
@@ -62,135 +82,294 @@ export default function AppLayout({ children, title = 'Overview' }) {
     navigate('/');
   };
 
+  const handleAiSubmit = (e) => {
+    e.preventDefault();
+    if (!aiPrompt.trim()) return;
+    
+    const userMsg = aiPrompt;
+    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setAiPrompt('');
+
+    setTimeout(() => {
+      let reply = `Analyzed decision logs for "${userMsg}". Found 3 sessions matching your query. Auto-filtered in Mission Control.`;
+      if (userMsg.toLowerCase().includes('reject') || userMsg.toLowerCase().includes('decline')) {
+        reply = 'Filtered to 2 DECLINED decisions: sess-a0dd38bd2155 (Credit < 640) and sess-8b9487775caf (Risk score 780).';
+      } else if (userMsg.toLowerCase().includes('policy')) {
+        reply = 'Policy RULE-CS-640 has been triggered 847 times today with a 98% accuracy score.';
+      }
+      setChatMessages(prev => [...prev, { role: 'assistant', text: reply }]);
+    }, 600);
+  };
+
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* ── Sidebar ──────────────────────────────────────── */}
-      <aside className="w-60 flex-shrink-0 border-r border-border bg-white flex flex-col sticky top-0 h-screen">
-        {/* Logo */}
-        <div className="px-5 py-5 border-b border-border">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-glow-sm">
-              <Shield className="w-4 h-4 text-white" />
+    <div className="min-h-screen bg-aurora-pattern text-[#1E293B] flex font-sans">
+      
+      {/* ── Aurora Mission Control Sidebar (#EEF4F7) ─────────────────── */}
+      <aside className="w-64 flex-shrink-0 bg-[#EEF4F7] border-r border-slate-200/90 flex flex-col sticky top-0 h-screen z-30 shadow-sm">
+        
+        {/* Brand Header */}
+        <div className="px-5 py-4 border-b border-slate-200/80 flex items-center justify-between">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
+            <div className="w-9 h-9 rounded-xl bg-[#0EA5A4] flex items-center justify-center text-white shadow-sm shadow-[#0EA5A4]/30">
+              <Shield className="w-5 h-5" />
             </div>
-            <span className="font-heading font-semibold text-foreground tracking-tight">AuditAI</span>
+            <div>
+              <span className="font-heading font-extrabold text-[#1E293B] text-base tracking-tight block">AuditAI</span>
+              <span className="text-[10px] font-mono text-[#0EA5A4] font-semibold">AI Governance OS</span>
+            </div>
           </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {/* AI Health Quick Banner */}
+        <div className="mx-3 my-3 p-3 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-heading">AI System Status</span>
+            <span className="badge-aurora-emerald text-[10px]">🟢 Healthy</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-heading text-[#1E293B]">97.4%</span>
+            <span className="text-[11px] text-emerald-600 font-semibold">Compliance</span>
+          </div>
+          <div className="mt-2 text-[10px] font-mono text-slate-500 flex items-center justify-between border-t border-slate-100 pt-1.5">
+            <span>4 Models Running</span>
+            <span>24ms Latency</span>
+          </div>
+        </div>
+
+        {/* Navigation Section */}
+        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+          <div className="px-3 py-1.5 text-[10px] font-mono uppercase font-bold tracking-widest text-slate-400">
+            Mission Control
+          </div>
           {NAV.map(item => {
-            const Icon    = item.icon;
-            const active  = location.pathname === item.path;
+            const active = location.pathname === item.path;
             return (
               <button
                 key={item.label}
                 onClick={() => navigate(item.path)}
-                className={`w-full text-left ${active ? 'sidebar-link-active' : 'sidebar-link'}`}
+                className={`w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all duration-150 ${
+                  active 
+                    ? 'bg-white text-[#0EA5A4] font-bold shadow-xs border border-slate-200/80' 
+                    : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 font-medium'
+                }`}
               >
-                <Icon className="w-4 h-4 flex-shrink-0" />
-                {item.label}
+                <span className="text-base leading-none">{item.icon}</span>
+                <span>{item.label}</span>
               </button>
             );
           })}
         </nav>
 
-        {/* User card */}
-        <div className="px-3 py-4 border-t border-border">
-          <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-muted transition-colors cursor-pointer">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+        {/* Sidebar Footer User Info */}
+        <div className="p-3 border-t border-slate-200/80 bg-[#EEF4F7]">
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-white/80 border border-slate-200/80">
+            <div className="w-8 h-8 rounded-full bg-[#0EA5A4] text-white flex items-center justify-center font-bold text-xs shadow-xs">
               T
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">Tharun</p>
-              <p className="text-xs text-muted-foreground truncate">Admin</p>
+              <p className="text-xs font-bold text-[#1E293B] truncate">Tharun Workspace</p>
+              <p className="text-[10px] text-slate-500 truncate">Enterprise Admin</p>
             </div>
-            <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors p-1" title="Logout">
+            <button onClick={handleLogout} className="text-slate-400 hover:text-rose-600 p-1 transition-colors" title="Logout">
               <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </aside>
 
-      {/* ── Main content ─────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Topbar */}
-        <header className="h-16 border-b border-border bg-white/80 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-40">
-          <h1 className="font-heading font-semibold text-foreground text-base">{title}</h1>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mr-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              Last synced {time.toLocaleTimeString()}
+      {/* ── Main Command Center Area ─────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col min-w-0 relative">
+        
+        {/* Floating Top Command Bar */}
+        <header className="h-16 px-6 lg:px-8 flex items-center justify-between border-b border-slate-200/70 bg-white/80 backdrop-blur-md sticky top-0 z-20">
+          
+          {/* Title & Path */}
+          <div className="flex items-center gap-3">
+            <h1 className="font-heading font-extrabold text-[#1E293B] text-lg">{title}</h1>
+            <span className="text-xs text-slate-400 font-mono hidden sm:inline-block">/ auditai-node-1</span>
+          </div>
+
+          {/* Center Command Search Trigger (Raycast style) */}
+          <button 
+            onClick={() => setSearchOpen(true)}
+            className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-100/80 border border-slate-200 text-xs text-slate-500 hover:bg-white hover:border-[#0EA5A4]/40 hover:text-slate-800 transition-all w-80 shadow-xs"
+          >
+            <Search className="w-3.5 h-3.5 text-[#0EA5A4]" />
+            <span className="flex-1 text-left">Search sessions, policies, tools…</span>
+            <kbd className="px-1.5 py-0.5 rounded bg-white text-[10px] font-mono text-slate-400 border border-slate-200">⌘K</kbd>
+          </button>
+
+          {/* Right Status Actions */}
+          <div className="flex items-center gap-3">
+            
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Live Feed Stream
             </div>
 
-            {/* Notification bell */}
+            {/* Notification Dropdown */}
             <div className="relative" ref={notifRef}>
               <button
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="btn-ghost p-2 relative"
+                className="btn-aurora-secondary p-2.5 relative"
                 aria-label="Notifications"
               >
-                <Bell className="w-4 h-4" />
+                <Bell className="w-4 h-4 text-slate-600" />
                 {unread > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-[9px] text-white font-bold flex items-center justify-center">
+                  <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-[9px] text-white font-bold flex items-center justify-center shadow-xs">
                     {unread}
                   </span>
                 )}
               </button>
 
-              {/* Notification dropdown */}
+              {/* Notification Popover */}
               {notifOpen && (
-                <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl border border-border shadow-card-hover z-50 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <div className="absolute right-0 top-12 w-80 bg-white border border-slate-200 rounded-2xl shadow-floating z-50 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-heading font-semibold text-sm text-foreground">Notifications</h3>
+                      <h3 className="font-heading font-bold text-xs text-[#1E293B]">Audit Notifications</h3>
                       {unread > 0 && (
-                        <span className="badge-red text-[10px]">{unread} new</span>
+                        <span className="badge-aurora-red text-[10px]">{unread} new</span>
                       )}
                     </div>
-                    <button onClick={markAllRead} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors">
+                    <button onClick={markAllRead} className="text-xs text-[#0EA5A4] font-semibold hover:underline">
                       Mark all read
                     </button>
                   </div>
-                  <div className="max-h-80 overflow-y-auto">
-                    {notifs.length === 0 ? (
-                      <div className="py-10 text-center text-sm text-muted-foreground">
-                        No notifications
-                      </div>
-                    ) : notifs.map(n => (
-                      <div
-                        key={n.id}
-                        className={`flex items-start gap-3 px-4 py-3 border-b border-border last:border-0 transition-colors ${n.read ? '' : 'bg-indigo-50/40'}`}
-                      >
-                        <div className="mt-0.5 flex-shrink-0">{notifIcon[n.type]}</div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-xs font-semibold text-foreground mb-0.5 ${n.read ? '' : 'text-indigo-900'}`}>{n.title}</p>
-                          <p className="text-xs text-muted-foreground leading-snug">{n.body}</p>
-                          <p className="text-[10px] text-muted-foreground/60 mt-1">{n.time}</p>
+
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                    {notifs.map(n => (
+                      <div key={n.id} className={`p-3 text-xs flex items-start gap-3 transition-colors ${n.read ? 'opacity-70' : 'bg-teal-50/20'}`}>
+                        <div className="mt-0.5">
+                          {n.type === 'alert' ? <AlertTriangle className="w-4 h-4 text-rose-500" /> : <CheckCircle className="w-4 h-4 text-emerald-500" />}
                         </div>
-                        <button onClick={() => dismiss(n.id)} className="text-muted-foreground hover:text-foreground p-0.5 flex-shrink-0">
+                        <div className="flex-1">
+                          <p className="font-bold text-slate-800">{n.title}</p>
+                          <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">{n.body}</p>
+                          <span className="text-[10px] text-slate-400 font-mono mt-1 block">{n.time}</span>
+                        </div>
+                        <button onClick={() => dismiss(n.id)} className="text-slate-400 hover:text-slate-600">
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ))}
                   </div>
-                  <div className="px-4 py-2.5 border-t border-border text-center">
-                    <button className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">View all notifications</button>
-                  </div>
                 </div>
               )}
             </div>
 
-            <button onClick={() => navigate('/settings')} className="btn-ghost p-2" aria-label="Settings">
-              <Settings className="w-4 h-4" />
+            <button onClick={() => navigate('/settings')} className="btn-aurora-secondary p-2.5">
+              <Settings className="w-4 h-4 text-slate-600" />
             </button>
+
           </div>
+
         </header>
 
-        {/* Page content */}
+        {/* Main Content Render */}
         <main className="flex-1 p-6 lg:p-8 overflow-auto">
           {children}
         </main>
+
+        {/* ── Floating AI Assistant (Bottom Right) ────────────────────────── */}
+        <div className="fixed bottom-6 right-6 z-40">
+          {!aiAssistantOpen ? (
+            <button
+              onClick={() => setAiAssistantOpen(true)}
+              className="flex items-center gap-2.5 px-4 py-3 rounded-full bg-[#0EA5A4] text-white font-bold text-xs shadow-aurora-lg hover:shadow-glow-teal hover:scale-105 transition-all duration-200 border border-teal-400/30"
+            >
+              <Bot className="w-4 h-4 animate-bounce" />
+              <span>Ask AI Copilot</span>
+            </button>
+          ) : (
+            <div className="w-80 sm:w-96 bg-white border border-slate-200/90 rounded-2xl shadow-floating overflow-hidden flex flex-col h-96">
+              
+              {/* Header */}
+              <div className="px-4 py-3 bg-[#0EA5A4] text-white flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bot className="w-4 h-4" />
+                  <span className="font-heading font-bold text-xs">Audit Copilot</span>
+                </div>
+                <button onClick={() => setAiAssistantOpen(false)} className="hover:opacity-80 p-0.5">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Chat Body */}
+              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 text-xs">
+                {chatMessages.map((m, i) => (
+                  <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`p-3 rounded-2xl max-w-[85%] leading-relaxed ${
+                      m.role === 'user' 
+                        ? 'bg-[#0EA5A4] text-white font-medium rounded-tr-none shadow-xs' 
+                        : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none shadow-xs'
+                    }`}>
+                      {m.text}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Input Footer */}
+              <form onSubmit={handleAiSubmit} className="p-2 bg-white border-t border-slate-200 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g. Show rejected sessions today…"
+                  className="aurora-input text-xs py-2"
+                  value={aiPrompt}
+                  onChange={e => setAiPrompt(e.target.value)}
+                />
+                <button type="submit" className="btn-aurora p-2 text-xs">
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+
+            </div>
+          )}
+        </div>
+
       </div>
+
+      {/* ── Raycast-style ⌘K Modal ─────────────────────────────────────── */}
+      {searchOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-start justify-center pt-24 px-4">
+          <div className="w-full max-w-xl bg-white rounded-2xl border border-slate-200 shadow-floating overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
+              <Search className="w-4 h-4 text-[#0EA5A4]" />
+              <input
+                type="text"
+                placeholder="Search sessions, policies, tools, decisions…"
+                className="w-full text-sm font-sans focus:outline-none bg-transparent"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                autoFocus
+              />
+              <button onClick={() => setSearchOpen(false)} className="text-xs text-slate-400 hover:text-slate-600">
+                ESC
+              </button>
+            </div>
+            
+            <div className="p-3 text-xs divide-y divide-slate-100">
+              <div className="py-2 text-[10px] font-mono uppercase font-bold text-slate-400 px-2">Recent Searches</div>
+              {[
+                { label: 'sess-a0dd38bd2155 · Declined loan application', path: '/session/sess-a0dd38bd2155' },
+                { label: 'RULE-CS-640 · Credit score threshold policy', path: '/policies' },
+                { label: 'credit_bureau_lookup · Tool call inspect', path: '/analytics' },
+              ].map((item, idx) => (
+                <div 
+                  key={idx}
+                  onClick={() => { navigate(item.path); setSearchOpen(false); }}
+                  className="flex items-center justify-between p-2.5 rounded-xl hover:bg-teal-50/50 hover:text-[#0EA5A4] cursor-pointer transition-colors"
+                >
+                  <span className="font-medium">{item.label}</span>
+                  <span className="text-[10px] text-slate-400 font-mono">Jump →</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
