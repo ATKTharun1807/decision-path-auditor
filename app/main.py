@@ -165,6 +165,21 @@ def run_demo(current_user: AuditorUser = Depends(get_current_user)):
     run_loan_decision(agent, application_id=f"APP-{random.randint(1000, 9999)}")
     return {"session_id": session_id, "user_id": user_id}
 
+class CopilotQueryRequest(BaseModel):
+    query: str
+    current_page: Optional[str] = None
+    current_session: Optional[str] = None
+
+@app.post("/api/copilot/chat")
+def copilot_chat(body: CopilotQueryRequest):
+    from .copilot import process_copilot_query
+    res = process_copilot_query(
+        query=body.query,
+        current_page=body.current_page,
+        current_session=body.current_session
+    )
+    return res
+
 # Serve the frontend last, so it doesn't shadow the API routes above.
 if FRONTEND_DIR.exists():
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")

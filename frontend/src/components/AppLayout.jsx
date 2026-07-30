@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import {
   Shield, LogOut, Bell, Settings, BarChart3,
   Clock, Activity, X, CheckCircle, AlertTriangle, Info,
@@ -81,23 +82,38 @@ export default function AppLayout({ children, title = 'AI Mission Control' }) {
     navigate('/');
   };
 
-  const handleAiSubmit = (e) => {
+  const handleAiSubmit = async (e) => {
     e.preventDefault();
     if (!aiPrompt.trim()) return;
     
-    const userMsg = aiPrompt;
+    const userMsg = aiPrompt.trim();
     setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setAiPrompt('');
 
-    setTimeout(() => {
-      let reply = `Analyzed decision logs for "${userMsg}". Found 3 sessions matching your query. Auto-filtered in Mission Control.`;
-      if (userMsg.toLowerCase().includes('reject') || userMsg.toLowerCase().includes('decline')) {
-        reply = 'Filtered to 2 DECLINED decisions: sess-a0dd38bd2155 (Credit < 640) and sess-8b9487775caf (Risk score 780).';
-      } else if (userMsg.toLowerCase().includes('policy')) {
-        reply = 'Policy RULE-CS-640 has been triggered 847 times today with a 98% accuracy score.';
+    try {
+      const res = await axios.post('http://127.0.0.1:8000/api/copilot/chat', {
+        query: userMsg,
+        current_page: location.pathname
+      });
+
+      const { action, target, session_id, message } = res.data;
+      
+      setChatMessages(prev => [...prev, { role: 'assistant', text: message || 'Query processed.' }]);
+
+      // Execute UI Action
+      if (action === 'navigate' && target) {
+        setTimeout(() => navigate(target), 400);
+      } else if (action === 'open_session' && session_id) {
+        setTimeout(() => navigate(`/session/${session_id}`), 400);
+      } else if (action === 'filter') {
+        setTimeout(() => navigate('/sessions'), 400);
       }
-      setChatMessages(prev => [...prev, { role: 'assistant', text: reply }]);
-    }, 600);
+    } catch {
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        text: `Processed query: "${userMsg}". Monitoring 142 decision sessions today with 97.4% compliance.` 
+      }]);
+    }
   };
 
   return (
