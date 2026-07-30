@@ -1,153 +1,439 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { LogOut, Search, Play, FileText, Activity } from 'lucide-react';
+import {
+  Shield, Search, Play, LogOut, Bell, Settings, BarChart3,
+  Clock, TrendingUp, AlertTriangle, CheckCircle, Activity,
+  ChevronRight, ArrowUpRight, Zap, Database, Cpu
+} from 'lucide-react';
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
+/* ─── Sidebar ────────────────────────────────────────────── */
+const NAV = [
+  { icon: BarChart3, label: 'Dashboard',   path: '/dashboard', active: true  },
+  { icon: Clock,     label: 'Sessions',    path: '/dashboard', active: false },
+  { icon: Activity,  label: 'Analytics',  path: '/dashboard', active: false },
+  { icon: Shield,    label: 'Policies',   path: '/dashboard', active: false },
+  { icon: Settings,  label: 'Settings',   path: '/dashboard', active: false },
+];
+
+/* ─── KPI cards ──────────────────────────────────────────── */
+const KPI_CARDS = [
+  {
+    label: 'Active Sessions',
+    value: '247',
+    change: '+12%',
+    up: true,
+    icon: Activity,
+    color: 'indigo',
+    sub: 'last 24 hours',
+  },
+  {
+    label: 'AI Decisions',
+    value: '18,400',
+    change: '+8.3%',
+    up: true,
+    icon: Cpu,
+    color: 'violet',
+    sub: 'this month',
+  },
+  {
+    label: 'Compliance Score',
+    value: '98%',
+    change: '+2pts',
+    up: true,
+    icon: CheckCircle,
+    color: 'green',
+    sub: 'vs last month',
+  },
+  {
+    label: 'Active Alerts',
+    value: '2',
+    change: '-1',
+    up: false,
+    icon: AlertTriangle,
+    color: 'amber',
+    sub: 'require attention',
+  },
+];
+
+const kpiColors = {
+  indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', ring: 'ring-indigo-200' },
+  violet: { bg: 'bg-violet-50', text: 'text-violet-600', ring: 'ring-violet-200' },
+  green:  { bg: 'bg-green-50',  text: 'text-green-600',  ring: 'ring-green-200'  },
+  amber:  { bg: 'bg-amber-50',  text: 'text-amber-600',  ring: 'ring-amber-200'  },
+};
+
+/* ─── Recent activity feed ───────────────────────────────── */
+const RECENT = [
+  { id: 'sess-a0dd38bd2155', user: 'user-7090', decision: 'DECLINE', rule: 'RULE-CS-640', steps: 10, ago: '2m ago',  risk: 'high'   },
+  { id: 'sess-8b9487775caf', user: 'user-6657', decision: 'DECLINE', rule: 'RULE-CS-640', steps: 10, ago: '8m ago',  risk: 'high'   },
+  { id: 'sess-f2a9c1be4d21', user: 'user-2341', decision: 'APPROVE', rule: 'RULE-CS-640', steps: 8,  ago: '15m ago', risk: 'low'    },
+  { id: 'sess-71c34e2a9f08', user: 'user-8812', decision: 'APPROVE', rule: 'RULE-INC-220',steps: 12, ago: '31m ago', risk: 'low'    },
+  { id: 'sess-3d1ab7f82c69', user: 'user-5590', decision: 'REVIEW',  rule: 'RULE-CS-640', steps: 9,  ago: '1h ago',  risk: 'medium' },
+];
+
+function DecisionBadge({ d }) {
+  const map = {
+    APPROVE: 'badge-green',
+    DECLINE: 'badge-red',
+    REVIEW:  'badge-yellow',
+  };
+  return <span className={`badge ${map[d] || 'badge-gray'}`}>{d}</span>;
+}
+
+function RiskDot({ risk }) {
+  const map = { high: 'bg-red-500', medium: 'bg-amber-400', low: 'bg-green-400' };
+  return <span className={`w-2 h-2 rounded-full ${map[risk]}`} />;
+}
+
+/* ─── Approval rate mini chart (pure CSS) ───────────────── */
+function ApprovalBar({ pct }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="text-xs font-mono text-muted-foreground w-8 text-right">{pct}%</span>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────── */
 export default function Dashboard() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
+  const [query,     setQuery]     = useState('');
+  const [error,     setError]     = useState('');
+  const [loading,   setLoading]   = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    navigate('/login');
+    navigate('/');
   };
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!searchQuery) return;
-    
-    setIsLoading(true);
+    if (!query.trim()) return;
+    setLoading(true);
     setError('');
     try {
-      if (searchQuery.startsWith('sess-')) {
-        navigate(`/session/${searchQuery}`);
+      if (query.startsWith('sess-')) {
+        navigate(`/session/${query}`);
       } else {
-        // Assume user_id search for simplicity in Phase 1 MVP
-        const res = await axios.get(`${API_BASE_URL}/decision-path/user/${searchQuery}`);
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API_BASE_URL}/decision-path/user/${query}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const sessions = Object.keys(res.data);
-        if (sessions.length > 0) {
-          navigate(`/session/${sessions[0]}`);
-        } else {
-          setError('No sessions found for this query.');
-        }
+        if (sessions.length > 0) navigate(`/session/${sessions[0]}`);
+        else setError('No sessions found.');
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to search for session');
+      setError(err.response?.data?.detail || 'Search failed');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const runDemo = async () => {
-    setIsLoading(true);
+    setDemoLoading(true);
     setError('');
     try {
-      const res = await axios.post(`${API_BASE_URL}/demo/run`);
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API_BASE_URL}/demo/run`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       navigate(`/session/${res.data.session_id}`);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Demo run failed');
+      setError(err.response?.data?.detail || 'Demo failed');
     } finally {
-      setIsLoading(false);
+      setDemoLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Activity className="w-5 h-5 text-primary" />
-              </div>
-              <span className="text-xl font-semibold tracking-tight">AI Auditor Dashboard</span>
+    <div className="min-h-screen bg-background flex">
+      {/* ── Sidebar ──────────────────────────────────────── */}
+      <aside className="w-60 flex-shrink-0 border-r border-border bg-white flex flex-col sticky top-0 h-screen">
+        {/* Logo */}
+        <div className="px-5 py-5 border-b border-border">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-glow-sm">
+              <Shield className="w-4 h-4 text-white" />
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
+            <span className="font-heading font-semibold text-foreground tracking-tight">AuditAI</span>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {NAV.map(item => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.label}
+                onClick={() => {}}
+                className={item.active ? 'sidebar-link-active w-full text-left' : 'sidebar-link w-full text-left'}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* User card */}
+        <div className="px-3 py-4 border-t border-border">
+          <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-muted transition-colors cursor-pointer">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              T
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">Tharun</p>
+              <p className="text-xs text-muted-foreground truncate">Admin</p>
+            </div>
+            <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors p-1" title="Logout">
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
-      </nav>
+      </aside>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="space-y-8">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold tracking-tight">Audit an AI Decision</h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Inspect the exact timeline of events, tools used, data retrieved, and reasoning behind any AI agent's decision.
+      {/* ── Main content ─────────────────────────────────── */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Topbar */}
+        <header className="h-16 border-b border-border bg-white/80 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-40">
+          <div>
+            <h1 className="font-heading font-semibold text-foreground text-base">Overview</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mr-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              Last synced {time.toLocaleTimeString()}
+            </div>
+            <button className="btn-ghost p-2 relative">
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
+            </button>
+            <button className="btn-ghost p-2"><Settings className="w-4 h-4" /></button>
+          </div>
+        </header>
+
+        <main className="flex-1 p-6 lg:p-8 overflow-auto">
+          {/* Greeting */}
+          <div className="mb-8">
+            <h2 className="font-heading text-2xl font-bold text-foreground mb-1">
+              Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'} 👋
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              Monitor your AI systems, inspect reasoning, and ensure regulatory compliance.
             </p>
           </div>
 
+          {/* Error */}
           {error && (
-            <div className="p-4 text-sm text-destructive-foreground bg-destructive/10 border border-destructive/20 rounded-lg flex items-center justify-center">
+            <div className="flex items-center gap-2 p-3 mb-6 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
           )}
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-xl relative overflow-hidden group hover:border-border transition-colors">
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <Search className="w-24 h-24" />
-              </div>
-              <h2 className="text-xl font-semibold mb-2">Look up a session</h2>
-              <p className="text-sm text-muted-foreground mb-6">Enter a Session ID or User ID to reconstruct its decision path.</p>
-              
-              <form onSubmit={handleSearch} className="flex space-x-2">
-                <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-muted-foreground" />
+          {/* KPI cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+            {KPI_CARDS.map((k) => {
+              const Icon  = k.icon;
+              const color = kpiColors[k.color];
+              return (
+                <div key={k.label} className="kpi-card group hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color.bg} ring-1 ${color.ring} group-hover:scale-110 transition-transform`}>
+                      <Icon className={`w-5 h-5 ${color.text}`} />
+                    </div>
+                    <span className={k.up ? 'kpi-change-up flex items-center gap-0.5' : 'kpi-change-down flex items-center gap-0.5'}>
+                      <TrendingUp className="w-3 h-3" />
+                      {k.change}
+                    </span>
                   </div>
+                  <p className="kpi-value">{k.value}</p>
+                  <p className="kpi-label">{k.label}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{k.sub}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Action row */}
+          <div className="grid lg:grid-cols-2 gap-5 mb-8">
+            {/* Search */}
+            <div className="card p-6">
+              <h3 className="font-heading font-semibold text-foreground mb-1">Query decision paths</h3>
+              <p className="text-sm text-muted-foreground mb-5">Look up an audited decision by session or user ID.</p>
+              <form onSubmit={handleSearch} className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="text"
-                    className="block w-full pl-10 pr-3 py-2 border border-input rounded-md leading-5 bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 sm:text-sm transition-all"
-                    placeholder="sess-123 or user-456"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="input pl-9"
+                    placeholder="sess-abc123 or user-456"
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background disabled:opacity-50 transition-colors"
-                >
-                  Search
+                <button type="submit" disabled={loading} className="btn-primary px-4 py-2.5 text-sm">
+                  {loading ? (
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                  ) : 'Search'}
                 </button>
               </form>
             </div>
 
-            <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-xl relative overflow-hidden group hover:border-border transition-colors">
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <Play className="w-24 h-24" />
+            {/* Run demo */}
+            <div className="card p-6 bg-gradient-to-br from-indigo-50 to-violet-50 border-indigo-100 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-indigo-200/30 to-transparent rounded-full -mr-12 -mt-12" />
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap className="w-4 h-4 text-indigo-600" />
+                  <h3 className="font-heading font-semibold text-foreground">Simulate a decision</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-5">Run a fresh AI loan decision and instantly view its audit trail.</p>
+                <button onClick={runDemo} disabled={demoLoading} className="btn-primary text-sm">
+                  {demoLoading ? (
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                  ) : <Play className="w-4 h-4 fill-white" />}
+                  {demoLoading ? 'Running…' : 'Run Demo Agent'}
+                </button>
               </div>
-              <h2 className="text-xl font-semibold mb-2">Simulate a decision</h2>
-              <p className="text-sm text-muted-foreground mb-6">Run a fresh AI loan decision and instantly view its audit trail.</p>
-              
-              <button
-                onClick={runDemo}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-secondary-foreground bg-secondary hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary focus:ring-offset-background disabled:opacity-50 transition-all"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Run Demo Agent
-              </button>
             </div>
           </div>
-          
-          <div className="mt-12 bg-card/50 border border-border rounded-xl p-8 text-center">
-            <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium text-foreground">Recent Audit Logs</h3>
-            <p className="text-sm text-muted-foreground mt-2">Global timeline analytics and reports will appear here in Phase 2.</p>
+
+          {/* Approval rates */}
+          <div className="grid lg:grid-cols-3 gap-5 mb-8">
+            <div className="card p-6">
+              <h3 className="font-heading font-semibold text-foreground text-sm mb-4">Decision breakdown</h3>
+              <div className="space-y-4">
+                {[
+                  { label: 'Approved', pct: 62, color: 'bg-green-400' },
+                  { label: 'Declined', pct: 29, color: 'bg-red-400'   },
+                  { label: 'Review',   pct: 9,  color: 'bg-amber-400' },
+                ].map(r => (
+                  <div key={r.label}>
+                    <div className="flex justify-between text-xs font-medium text-muted-foreground mb-1">
+                      <span>{r.label}</span>
+                    </div>
+                    <ApprovalBar pct={r.pct} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h3 className="font-heading font-semibold text-foreground text-sm mb-4">Top tool calls</h3>
+              <div className="space-y-3">
+                {[
+                  { name: 'credit_bureau_lookup', calls: 847, pct: 91 },
+                  { name: 'income_verification',  calls: 712, pct: 77 },
+                  { name: 'policy_engine_check',  calls: 923, pct: 99 },
+                ].map(t => (
+                  <div key={t.name}>
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                      <span className="font-mono truncate max-w-[140px]">{t.name}</span>
+                      <span>{t.calls}</span>
+                    </div>
+                    <ApprovalBar pct={t.pct} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h3 className="font-heading font-semibold text-foreground text-sm mb-4">Compliance overview</h3>
+              <div className="space-y-3">
+                {[
+                  { label: 'EU AI Act',     status: 'Compliant', ok: true  },
+                  { label: 'ISO 42001',     status: 'Compliant', ok: true  },
+                  { label: 'NIST AI RMF',  status: 'Partial',   ok: false },
+                  { label: 'SOC 2',        status: 'Compliant', ok: true  },
+                ].map(c => (
+                  <div key={c.label} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                    <span className="text-sm text-foreground font-medium">{c.label}</span>
+                    <span className={c.ok ? 'badge-green' : 'badge-yellow'}>{c.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </main>
+
+          {/* Recent sessions table */}
+          <div className="card overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <h3 className="font-heading font-semibold text-foreground">Recent Sessions</h3>
+              <button className="text-sm text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-1">
+                View all <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/40 border-b border-border">
+                    <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Session</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">User</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Decision</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Rule</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Steps</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Risk</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">When</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {RECENT.map((r, i) => (
+                    <tr
+                      key={r.id}
+                      className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer group"
+                      onClick={() => navigate(`/session/${r.id}`)}
+                    >
+                      <td className="px-6 py-3.5">
+                        <span className="font-mono text-xs text-foreground font-medium">{r.id}</span>
+                      </td>
+                      <td className="px-4 py-3.5 text-muted-foreground">{r.user}</td>
+                      <td className="px-4 py-3.5"><DecisionBadge d={r.decision} /></td>
+                      <td className="px-4 py-3.5"><span className="font-mono text-xs text-muted-foreground">{r.rule}</span></td>
+                      <td className="px-4 py-3.5 text-muted-foreground">{r.steps}</td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <RiskDot risk={r.risk} />
+                          <span className="text-xs capitalize text-muted-foreground">{r.risk}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 text-xs text-muted-foreground">{r.ago}</td>
+                      <td className="px-4 py-3.5">
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

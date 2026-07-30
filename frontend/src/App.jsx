@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
+import Landing     from './pages/Landing';
+import Login       from './pages/Login';
+import Dashboard   from './pages/Dashboard';
 import TimelineView from './pages/TimelineView';
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
+// Global auth interceptors
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
@@ -28,21 +28,24 @@ axios.interceptors.response.use(
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" />;
+  return token ? children : <Navigate to="/login" replace />;
 }
 
-function App() {
+export default function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-background text-foreground dark">
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/session/:id" element={<PrivateRoute><TimelineView /></PrivateRoute>} />
-        </Routes>
-      </div>
+      <Routes>
+        {/* Public */}
+        <Route path="/"       element={<Landing />} />
+        <Route path="/login"  element={<Login />} />
+
+        {/* Protected */}
+        <Route path="/dashboard"    element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/session/:id"  element={<PrivateRoute><TimelineView /></PrivateRoute>} />
+
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Router>
   );
 }
-
-export default App;
