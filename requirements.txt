@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+anthropic
+python-dateutil
+python-jose[cryptography]
+bcrypt
+python-multipart
