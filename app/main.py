@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import os
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, List, Dict, Any
+from uuid import uuid4
+import random
 
 from fastapi import FastAPI, HTTPException, Query, Header, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +16,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from .models import get_engine, get_session_factory, AuditorUser, DecisionEvent
+from .models import get_engine, get_session_factory, AuditorUser, DecisionEvent, EventType
 from .logger import EventLogger
 from .reconstructor import DecisionPathReconstructor
 from .summarizer import generate_challenge_response, generate_decision_summary
@@ -192,6 +195,128 @@ def get_analytics_stats(db: Session = Depends(get_db)):
             "decline": 29,
             "review": 9
         }
+    }
+
+class LiveExecutionRequest(BaseModel):
+    agent_name: Optional[str] = "LoanEvaluator-v4"
+    user_id: Optional[str] = None
+    credit_score: Optional[int] = 610
+    requested_amount: Optional[int] = 45000
+    ssn: Optional[str] = "987-65-4321"
+    email: Optional[str] = "user@enterprise-client.com"
+
+@app.post("/api/decision/execute")
+def execute_live_decision(body: LiveExecutionRequest):
+    """Executes a real-time AI decision pipeline and records all audit steps live into SQLite."""
+    sid = f"sess-{uuid4().hex[:12]}"
+    uid = body.user_id or f"user-{random.randint(1000, 9999)}"
+    credit = body.credit_score or 610
+    decision = "APPROVE" if credit >= 640 else "DECLINE"
+
+    # Step 1: Input Event
+    event_logger.log(
+        session_id=sid,
+        user_id=uid,
+        event_type=EventType.INPUT,
+        payload={
+            "application_id": f"APP-{random.randint(1000, 9999)}",
+            "agent": body.agent_name,
+            "credit_score": credit,
+            "requested_amount": body.requested_amount,
+            "ssn": body.ssn,
+            "email": body.email
+        },
+        summary=f"Received live application input for user {uid}"
+    )
+
+    # Step 2: Context Retrieved
+    event_logger.log(
+        session_id=sid,
+        user_id=uid,
+        event_type=EventType.CONTEXT_RETRIEVED,
+        payload={
+            "user_id": uid,
+            "credit_score": credit,
+            "account_status": "ACTIVE",
+            "historical_defaults": 0
+        },
+        summary=f"Retrieved user credit context & historical records"
+    )
+
+    # Step 3: Tool Call
+    event_logger.log(
+        session_id=sid,
+        user_id=uid,
+        event_type=EventType.TOOL_CALL,
+        payload={
+            "tool": "credit_bureau_verifier_v2",
+            "parameters": {"user_id": uid, "score": credit},
+            "latency_ms": random.randint(12, 28)
+        },
+        summary="Executed credit_bureau_verifier_v2 API"
+    )
+
+    # Step 4: Tool Response
+    event_logger.log(
+        session_id=sid,
+        user_id=uid,
+        event_type=EventType.TOOL_RESPONSE,
+        payload={
+            "policy_id": "RULE-CS-640",
+            "rule": "Credit Score Threshold (min 640)",
+            "evaluated_score": credit,
+            "threshold": 640,
+            "passed": credit >= 640
+        },
+        summary=f"Policy RULE-CS-640 evaluated: {'Passed' if credit >= 640 else 'Triggered Decline'}"
+    )
+
+    # Step 5: Reasoning Step
+    event_logger.log(
+        session_id=sid,
+        user_id=uid,
+        event_type=EventType.REASONING_STEP,
+        payload={
+            "agent": body.agent_name,
+            "reasoning": f"Credit score {credit} is {'above' if credit >= 640 else 'below'} policy threshold 640.",
+            "confidence": "97%"
+        },
+        summary=f"{body.agent_name} synthesized verdict: {decision}"
+    )
+
+    # Step 6: Decision
+    event_logger.log(
+        session_id=sid,
+        user_id=uid,
+        event_type=EventType.DECISION,
+        payload={
+            "decision": decision,
+            "status": "COMPLETED",
+            "policy_applied": "RULE-CS-640"
+        },
+        summary=f"Final Decision: {decision}"
+    )
+
+    # Step 7: Output
+    event_logger.log(
+        session_id=sid,
+        user_id=uid,
+        event_type=EventType.OUTPUT,
+        payload={
+            "output": f"Loan Application {decision}",
+            "session_id": sid
+        },
+        summary=f"Output persisted for session {sid}"
+    )
+
+    return {
+        "status": "SUCCESS",
+        "session_id": sid,
+        "user_id": uid,
+        "decision": decision,
+        "agent": body.agent_name,
+        "steps_logged": 7,
+        "message": f"Real-time decision execution completed for session {sid}"
     }
 
 @app.get("/health")

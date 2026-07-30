@@ -8,6 +8,8 @@ import {
   FolderGit2, Cpu, Sliders, Play, Terminal
 } from 'lucide-react';
 
+import LiveExecutionModal from './LiveExecutionModal';
+
 /* ─── Aurora Command Center Navigation ─────────────────── */
 const NAV = [
   { icon: '🏠', label: 'Dashboard',     path: '/dashboard'  },
@@ -15,7 +17,7 @@ const NAV = [
   { icon: '📂', label: 'Sessions',      path: '/sessions'   },
   { icon: '📊', label: 'Analytics',     path: '/analytics'  },
   { icon: '🛡', label: 'Policies',      path: '/policies'   },
-  { icon: '🤖', label: 'AI Agents',     path: '/analytics'  },
+  { icon: '🤖', label: 'AI Agents',     path: '/agents'     },
   { icon: '⚙', label: 'Settings',      path: '/settings'   },
 ];
 
@@ -40,6 +42,7 @@ export default function AppLayout({ children, title = 'AI Mission Control' }) {
   // Floating AI Assistant State
   const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
   const [aiPrompt, setAiPrompt]               = useState('');
+  const [liveModalOpen, setLiveModalOpen]   = useState(false);
   const [chatMessages, setChatMessages]       = useState([
     { role: 'assistant', text: 'Hello Tharun! Ask me anything about your AI decision stream, e.g., "Show rejected sessions today" or "Which policy failed most?"' }
   ]);
@@ -217,10 +220,14 @@ export default function AppLayout({ children, title = 'AI Mission Control' }) {
           {/* Right Status Actions */}
           <div className="flex items-center gap-3">
             
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+            <button
+              onClick={() => setLiveModalOpen(true)}
+              className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs font-semibold cursor-pointer transition-colors shadow-xs"
+            >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Live Feed Stream
-            </div>
+              <span>Live Feed Stream</span>
+              <span className="text-[10px] bg-emerald-200/80 px-1.5 py-0.5 rounded-full text-emerald-800 font-mono">⚡ Run Live</span>
+            </button>
 
             {/* Notification Dropdown */}
             <div className="relative" ref={notifRef}>
@@ -384,6 +391,9 @@ export default function AppLayout({ children, title = 'AI Mission Control' }) {
           </div>
         </div>
       )}
+
+      {/* Live Real-time Execution Modal */}
+      <LiveExecutionModal isOpen={liveModalOpen} onClose={() => setLiveModalOpen(false)} />
 
     </div>
   );
