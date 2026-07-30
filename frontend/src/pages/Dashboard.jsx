@@ -16,7 +16,7 @@ export default function Dashboard() {
     navigate('/login');
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery) return;
     
@@ -35,7 +35,7 @@ export default function Dashboard() {
           setError('No sessions found for this query.');
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       setError(err.response?.data?.detail || 'Failed to search for session');
     } finally {
       setIsLoading(false);
@@ -48,7 +48,7 @@ export default function Dashboard() {
     try {
       const res = await axios.post(`${API_BASE_URL}/demo/run`);
       navigate(`/session/${res.data.session_id}`);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.response?.data?.detail || 'Demo run failed');
     } finally {
       setIsLoading(false);

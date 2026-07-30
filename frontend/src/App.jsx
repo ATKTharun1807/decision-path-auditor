@@ -26,7 +26,7 @@ axios.interceptors.response.use(
   }
 );
 
-function PrivateRoute({ children }: { children: JSX.Element }) {
+function PrivateRoute({ children }) {
   const token = localStorage.getItem('token');
   return token ? children : <Navigate to="/login" />;
 }

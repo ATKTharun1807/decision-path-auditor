@@ -5,7 +5,7 @@ import { ArrowLeft, Clock, ShieldAlert, CheckCircle, FileText, Bot, Activity } f
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
-const iconMap: any = {
+const iconMap = {
   input: <Bot className="w-5 h-5" />,
   context_retrieved: <FileText className="w-5 h-5" />,
   tool_call: <Activity className="w-5 h-5" />,
@@ -18,19 +18,19 @@ const iconMap: any = {
 export default function TimelineView() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [timeline, setTimeline] = useState<any>(null);
+  const [timeline, setTimeline] = useState(null);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'timeline' | 'summary' | 'regulatory'>('timeline');
+  const [activeTab, setActiveTab] = useState('timeline');
 
   // Summary State
-  const [summaryData, setSummaryData] = useState<string | null>(null);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [summaryData, setSummaryData] = useState(null);
+  const [summaryError, setSummaryError] = useState(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   // Regulatory State
   const [challengeText, setChallengeText] = useState('');
-  const [regulatoryData, setRegulatoryData] = useState<string | null>(null);
-  const [regulatoryError, setRegulatoryError] = useState<string | null>(null);
+  const [regulatoryData, setRegulatoryData] = useState(null);
+  const [regulatoryError, setRegulatoryError] = useState(null);
   const [isGeneratingRegulatory, setIsGeneratingRegulatory] = useState(false);
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function TimelineView() {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         const res = await axios.get(`${API_BASE_URL}/decision-path/session/${id}`, { headers });
         setTimeline(res.data);
-      } catch (err: any) {
+      } catch (err) {
         setError('Could not load timeline for this session.');
       }
     };
@@ -55,7 +55,7 @@ export default function TimelineView() {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const res = await axios.post(`${API_BASE_URL}/decision-path/session/${id}/summary`, {}, { headers });
       setSummaryData(res.data.summary);
-    } catch (err: any) {
+    } catch (err) {
       setSummaryError(err.response?.data?.detail || err.message);
     } finally {
       setIsGeneratingSummary(false);
@@ -70,7 +70,7 @@ export default function TimelineView() {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const res = await axios.post(`${API_BASE_URL}/decision-path/session/${id}/challenge-response`, { challenge_text: challengeText }, { headers });
       setRegulatoryData(res.data.challenge_response);
-    } catch (err: any) {
+    } catch (err) {
       setRegulatoryError(err.response?.data?.detail || err.message);
     } finally {
       setIsGeneratingRegulatory(false);
@@ -93,11 +93,11 @@ export default function TimelineView() {
     );
   }
 
-  const decisionEvent = timeline.timeline.find((e: any) => e.event_type === 'decision');
+  const decisionEvent = timeline.timeline.find((e) => e.event_type === 'decision');
   const decisionValue = decisionEvent?.payload?.decision || 'UNKNOWN';
   const ruleApplied = decisionEvent?.payload?.rule_id || 'N/A';
-  const toolCallsCount = timeline.timeline.filter((e: any) => e.event_type === 'tool_call').length;
-  const redactedCount = timeline.timeline.filter((e: any) => e.redacted).length;
+  const toolCallsCount = timeline.timeline.filter((e) => e.event_type === 'tool_call').length;
+  const redactedCount = timeline.timeline.filter((e) => e.redacted).length;
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
@@ -182,7 +182,7 @@ export default function TimelineView() {
         
         {activeTab === 'timeline' && (
           <div className="space-y-8 pl-4">
-            {timeline.timeline.map((evt: any, index: number) => {
+            {timeline.timeline.map((evt, index) => {
               const isLast = index === timeline.timeline.length - 1;
               const isRedacted = evt.redacted;
 
