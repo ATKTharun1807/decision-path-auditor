@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 const FALLBACK_SESSIONS = [
   { id: 'sess-a0dd38bd2155', title: 'Personal Loan Application', user: 'user-7090', decision: 'DECLINE', confidence: '94%', rule: 'RULE-CS-640',  ago: '2 min ago',  amount: '$12,000' },

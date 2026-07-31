@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Play, Zap, CheckCircle2, Shield, Activity, X, ArrowRight, Bot } from 'lucide-react';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 const AGENT_OPTIONS = [
   { id: 'LoanEvaluator-v4',    name: 'LoanEvaluator-v4',    domain: 'Financial Credit & Loans', defaultRule: 'RULE-CS-640' },

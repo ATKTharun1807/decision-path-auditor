@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 const RECENT_STREAM = [
   { id: 'sess-a0dd38bd2155', agent: 'LoanEvaluator-v4', decision: 'DECLINE', confidence: '96%', rule: 'RULE-CS-640',  steps: 5, ago: '2 min ago', risk: 'High', user: 'user-7090' },
