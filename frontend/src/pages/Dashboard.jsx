@@ -114,27 +114,27 @@ export default function Dashboard() {
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="badge-aurora-emerald">🟢 AI Health: 97.4%</span>
-              <span className="text-xs text-slate-400 font-mono font-medium">SOC-2 Verified Stream</span>
+              <span className="badge-aurora-emerald">🟢 System Uptime: 99.9%</span>
+              <span className="text-xs text-slate-400 font-mono font-medium">Secure & Compliant</span>
             </div>
-            <h2 className="font-heading text-2xl font-extrabold text-[#1E293B]">AI Decision Mission Control</h2>
+            <h2 className="font-heading text-2xl font-extrabold text-[#1E293B]">Loan Decisions Overview</h2>
           </div>
 
           <div className="flex items-center gap-3">
             <button onClick={generate50Demo} disabled={demoLoading} className="btn-aurora-secondary text-xs px-4 py-2.5 flex items-center gap-2">
               <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              <span>Generate 50 Demo Sessions</span>
+              <span>Create Test Applications</span>
             </button>
             <button onClick={runDemo} disabled={demoLoading} className="btn-aurora text-xs px-4 py-2.5">
               {demoLoading ? (
                 <span className="flex items-center gap-2">
                   <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Executing AI Session…
+                  Processing…
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <Play className="w-3.5 h-3.5 fill-white" />
-                  Simulate AI Decision
+                  Process New Application
                 </span>
               )}
             </button>
@@ -152,15 +152,15 @@ export default function Dashboard() {
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Policy Violations</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Declined (Policy)</p>
             <div className="flex items-baseline justify-between">
               <span className="font-heading text-3xl font-extrabold text-rose-600">3</span>
-              <span className="text-xs font-bold text-slate-500">Auto-Blocked</span>
+              <span className="text-xs font-bold text-slate-500">Auto-Declined</span>
             </div>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Compliance Accuracy</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Approval Accuracy</p>
             <div className="flex items-baseline justify-between">
               <span className="font-heading text-3xl font-extrabold text-[#0EA5A4]">98.2%</span>
               <span className="text-xs font-bold text-emerald-600">Optimal</span>
@@ -168,9 +168,9 @@ export default function Dashboard() {
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Audit Stream Status</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">System Speed</p>
             <div className="flex items-center justify-between mt-2">
-              <span className="badge-aurora-teal text-xs">Active Logger</span>
+              <span className="badge-aurora-teal text-xs">Fast</span>
               <span className="text-xs font-mono font-bold text-slate-600">24ms avg</span>
             </div>
           </div>
@@ -182,11 +182,11 @@ export default function Dashboard() {
       <div className="mb-6 aurora-card p-5 border-[#0EA5A4]/40 bg-teal-50/20">
         <div className="flex items-center gap-2 mb-2">
           <Search className="w-4 h-4 text-[#0EA5A4]" />
-          <h3 className="font-heading font-bold text-sm text-[#1E293B]">Inspect Session ID or User ID</h3>
-          <span className="badge-aurora-teal text-[10px]">Instant Audit Lookup</span>
+          <h3 className="font-heading font-bold text-sm text-[#1E293B]">Search for an Application</h3>
+          <span className="badge-aurora-teal text-[10px]">Quick Search</span>
         </div>
         <p className="text-xs text-slate-500 mb-3">
-          Enter any <strong>Session ID</strong> or <strong>User ID</strong> to jump directly to its execution graph.
+          Enter an <strong>Application ID</strong> or <strong>User ID</strong> to see exactly why a loan was approved or declined.
         </p>
 
         <form onSubmit={handleLookup} className="flex gap-2 mb-3">
@@ -200,7 +200,7 @@ export default function Dashboard() {
             />
           </div>
           <button type="submit" disabled={searchLoading} className="btn-aurora text-xs px-5">
-            {searchLoading ? 'Searching…' : 'Inspect Audit Path →'}
+            {searchLoading ? 'Searching…' : 'Search →'}
           </button>
         </form>
 
@@ -246,8 +246,8 @@ export default function Dashboard() {
         <div className="lg:col-span-7 space-y-3">
           <div className="flex items-center justify-between px-1 mb-2">
             <h3 className="font-heading font-bold text-sm text-[#1E293B] flex items-center gap-2">
-              <span>Decision Stream</span>
-              <span className="badge-aurora-teal text-[10px]">Real-Time Audit</span>
+              <span>Recent Applications</span>
+              <span className="badge-aurora-teal text-[10px]">Live Updates</span>
             </h3>
             <button onClick={() => navigate('/sessions')} className="text-xs font-bold text-[#0EA5A4] hover:underline">
               View All Inbox →
@@ -295,14 +295,14 @@ export default function Dashboard() {
           <div className="aurora-card p-6 sticky top-20 border-teal-200/60 shadow-aurora-lg">
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
               <div>
-                <span className="text-[10px] font-mono uppercase font-bold text-slate-400">Inspecting Session</span>
+                <span className="text-[10px] font-mono uppercase font-bold text-slate-400">Inspecting Application</span>
                 <h4 className="font-heading font-extrabold text-base text-[#1E293B]">{selectedSession.id}</h4>
               </div>
               <button 
                 onClick={() => navigate(`/session/${selectedSession.id}`)}
                 className="btn-aurora text-xs px-3.5 py-2"
               >
-                Inspect Pipeline →
+                View Full Details →
               </button>
             </div>
 
