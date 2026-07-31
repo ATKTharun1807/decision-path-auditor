@@ -26,11 +26,23 @@ try:
     with urllib.request.urlopen(req) as response:
         result = json.loads(response.read().decode())
         
+        session_id = result['session_id']
         print(f"✅ Successfully created a REAL session in the database!")
-        print(f"Session ID : {result['session_id']}")
+        print(f"Session ID : {session_id}")
         print(f"User ID    : {result['user_id']}")
         print(f"Decision   : {result['decision']}")
-        print(f"\nYou can now look up '{result['session_id']}' in the frontend dashboard or Swagger UI!")
+        
+        print("\n" + "=" * 70)
+        print("📄 FULL SESSION OUTPUT FROM DATABASE")
+        print("=" * 70)
+        
+        # Fetch the newly created session from the database API
+        req_get = urllib.request.Request(f"http://127.0.0.1:8000/decision-path/session/{session_id}")
+        with urllib.request.urlopen(req_get) as get_response:
+            session_data = json.loads(get_response.read().decode())
+            # Print the timeline events nicely formatted
+            print(json.dumps(session_data.get("timeline", []), indent=2))
+            
 except Exception as e:
     print(f"❌ Failed to connect to the backend API: {e}")
     print("Make sure your FastAPI backend is running on http://127.0.0.1:8000")

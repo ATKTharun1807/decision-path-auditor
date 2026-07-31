@@ -4,7 +4,10 @@ Database Connection & Engine Factory for AuditAI Backend.
 from __future__ import annotations
 
 import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
+
+load_dotenv()
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 Base = declarative_base()
