@@ -26,7 +26,7 @@ Navigational Actions:
 - For Q&A: {"action": "chat", "message": "..."}
 """
 
-def query_ollama(prompt: str, model: str = "llama3.2") -> Optional[Dict[str, Any]]:
+def query_ollama(prompt: str, model: str = "qwen2.5:latest") -> Optional[Dict[str, Any]]:
     """Tries calling local Ollama server if running on port 11434."""
     try:
         req_data = json.dumps({
