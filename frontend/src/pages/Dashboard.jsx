@@ -24,6 +24,12 @@ export default function Dashboard() {
   const [demoLoading, setDemoLoading] = useState(false);
   const [recentStream, setRecentStream] = useState(RECENT_STREAM);
   const [selectedSession, setSelectedSession] = useState(RECENT_STREAM[0]);
+  const [stats, setStats] = useState({
+    total_decisions: '-',
+    policy_violations: '-',
+    compliance_score: '-',
+    avg_latency_ms: '-',
+  });
 
   useEffect(() => {
     const fetchStream = async () => {
@@ -33,6 +39,11 @@ export default function Dashboard() {
           const top4 = res.data.slice(0, 4);
           setRecentStream(top4);
           setSelectedSession(prev => top4.find(s => s.id === prev.id) || top4[0]);
+        }
+        
+        const statsRes = await axios.get(`${API_BASE_URL}/api/analytics/stats`);
+        if (statsRes.data) {
+          setStats(statsRes.data);
         }
       } catch (e) {}
     };
@@ -146,7 +157,7 @@ export default function Dashboard() {
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70">
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Today's Decisions</p>
             <div className="flex items-baseline justify-between">
-              <span className="font-heading text-3xl font-extrabold text-[#1E293B]">142</span>
+              <span className="font-heading text-3xl font-extrabold text-[#1E293B]">{stats.total_decisions}</span>
               <span className="text-xs font-bold text-emerald-600">+14% vs avg</span>
             </div>
           </div>
@@ -154,7 +165,7 @@ export default function Dashboard() {
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70">
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Declined (Policy)</p>
             <div className="flex items-baseline justify-between">
-              <span className="font-heading text-3xl font-extrabold text-rose-600">3</span>
+              <span className="font-heading text-3xl font-extrabold text-rose-600">{stats.policy_violations}</span>
               <span className="text-xs font-bold text-slate-500">Auto-Declined</span>
             </div>
           </div>
@@ -162,7 +173,7 @@ export default function Dashboard() {
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70">
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Approval Accuracy</p>
             <div className="flex items-baseline justify-between">
-              <span className="font-heading text-3xl font-extrabold text-[#0EA5A4]">98.2%</span>
+              <span className="font-heading text-3xl font-extrabold text-[#0EA5A4]">{stats.compliance_score}%</span>
               <span className="text-xs font-bold text-emerald-600">Optimal</span>
             </div>
           </div>
@@ -171,7 +182,7 @@ export default function Dashboard() {
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">System Speed</p>
             <div className="flex items-center justify-between mt-2">
               <span className="badge-aurora-teal text-xs">Fast</span>
-              <span className="text-xs font-mono font-bold text-slate-600">24ms avg</span>
+              <span className="text-xs font-mono font-bold text-slate-600">{stats.avg_latency_ms}ms avg</span>
             </div>
           </div>
         </div>
