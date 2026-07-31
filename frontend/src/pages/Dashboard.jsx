@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -22,7 +22,24 @@ export default function Dashboard() {
   const [searchError, setSearchError] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [recentStream, setRecentStream] = useState(RECENT_STREAM);
   const [selectedSession, setSelectedSession] = useState(RECENT_STREAM[0]);
+
+  useEffect(() => {
+    const fetchStream = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/sessions`);
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          const top4 = res.data.slice(0, 4);
+          setRecentStream(top4);
+          setSelectedSession(prev => top4.find(s => s.id === prev.id) || top4[0]);
+        }
+      } catch (e) {}
+    };
+    fetchStream();
+    const interval = setInterval(fetchStream, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLookup = async (e) => {
     if (e) e.preventDefault();
@@ -238,7 +255,7 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-3">
-            {RECENT_STREAM.map(s => {
+            {recentStream.map(s => {
               const isSelected = selectedSession.id === s.id;
               return (
                 <div
@@ -297,8 +314,12 @@ export default function Dashboard() {
               
               <div className="space-y-2">
                 {[
-                  { label: 'Credit Score Evaluation', result: 'Failed (Score: 610 < 640)', ok: false },
-                  { label: 'Income Verification',     result: 'Verified ($45,000/yr)',     ok: true  },
+                  { 
+                    label: 'Credit Score Evaluation', 
+                    result: selectedSession.decision === 'APPROVE' ? 'Passed (Score: 720 > 640)' : 'Failed (Score: 610 < 640)', 
+                    ok: selectedSession.decision === 'APPROVE' 
+                  },
+                  { label: 'Income Verification',     result: 'Verified',     ok: true  },
                   { label: 'PII Redaction Active',    result: 'SSN & DOB Redacted',        ok: true  },
                 ].map((item, idx) => (
                   <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs">
@@ -318,7 +339,11 @@ export default function Dashboard() {
               <p className="font-bold text-[#0EA5A4] mb-1 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" /> Explainability Summary
               </p>
-              The loan application was declined because the applicant's credit score of 610 falls below the mandatory threshold of 640 required by policy <strong>RULE-CS-640</strong>.
+              {selectedSession.decision === 'APPROVE' ? (
+                <>The application was <strong>approved</strong> because the applicant meets the mandatory threshold required by policy <strong>RULE-CS-640</strong>.</>
+              ) : (
+                <>The application was <strong>declined</strong> because the applicant falls below the mandatory threshold required by policy <strong>RULE-CS-640</strong>.</>
+              )}
             </div>
 
           </div>

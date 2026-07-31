@@ -379,16 +379,24 @@ def get_all_sessions(db: Session = Depends(get_db)):
                 "session_id": sid,
                 "user_id": e.user_id,
                 "user": e.user_id,
-                "agent": "LoanEvaluator-v4" if "loan" in sid or "a0dd" in sid else "CreditRiskGuard",
-                "decision": "DECLINE" if "8b94" in sid or "a0dd" in sid else "APPROVE",
+                "agent": "Unknown Agent",
+                "decision": "PENDING",
                 "confidence": "96%",
                 "rule": "RULE-CS-640",
-                "steps": 1,
+                "steps": 0,
                 "created_at": e.timestamp.isoformat(),
                 "ago": "Just now"
             }
-        else:
-            sessions_map[sid]["steps"] += 1
+        
+        sessions_map[sid]["steps"] += 1
+        
+        payload = e.payload if isinstance(e.payload, dict) else {}
+        event_type_str = str(e.event_type)
+        
+        if "INPUT" in event_type_str and "agent" in payload:
+            sessions_map[sid]["agent"] = payload["agent"]
+        elif "DECISION" in event_type_str and "decision" in payload:
+            sessions_map[sid]["decision"] = payload["decision"]
 
     return list(sessions_map.values())
 
