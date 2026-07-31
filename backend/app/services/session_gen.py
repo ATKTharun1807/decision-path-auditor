@@ -3,11 +3,19 @@ import os
 import time
 from uuid import uuid4
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Allow running from project root or backend directory
+app_dir = os.path.dirname(os.path.abspath(__file__))          # .../backend/app/services
+backend_app_dir = os.path.dirname(app_dir)                     # .../backend/app
+backend_dir = os.path.dirname(backend_app_dir)                 # .../backend
+root_dir = os.path.dirname(backend_dir)                        # .../AuditAI
 
-from app.models import get_engine, get_session_factory
-from app.logger import EventLogger
-from app.wrapper import InstrumentedAgent
+for p in [root_dir, backend_dir]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+from app.database.database import get_engine, get_session_factory
+from app.services.logger import EventLogger
+from app.services.wrapper import InstrumentedAgent
 
 def run_financial_agent(prompt: str):
     print(f"Executing Agent with prompt: '{prompt}'")

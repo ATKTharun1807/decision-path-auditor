@@ -1,6 +1,6 @@
 """
 Unified LLM Service Router powered by local Ollama (qwen2.5:latest).
-All model generation requests route through local Ollama daemon at http://127.0.0.1:11434/api/generate
+Routes model generation requests to local Ollama daemon at http://127.0.0.1:11434/api/generate
 """
 from __future__ import annotations
 
@@ -62,9 +62,6 @@ class LLMService:
         temperature: float = 0.2,
         max_tokens: int = 2000
     ) -> Dict[str, Any]:
-        """
-        Executes prompt generation through local Ollama (qwen2.5:latest).
-        """
         start_time = time.time()
         ollama_response_text = None
 
