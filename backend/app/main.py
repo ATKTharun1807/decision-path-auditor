@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 import time
+import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -390,7 +391,10 @@ def get_all_sessions(db: Session = Depends(get_db)):
         
         sessions_map[sid]["steps"] += 1
         
-        payload = e.payload if isinstance(e.payload, dict) else {}
+        try:
+            payload = json.loads(e.payload_json) if e.payload_json else {}
+        except Exception:
+            payload = {}
         event_type_str = str(e.event_type)
         
         if "INPUT" in event_type_str and "agent" in payload:

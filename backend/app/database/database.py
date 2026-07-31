@@ -24,7 +24,12 @@ def get_engine(db_url: str = None):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
         
     connect_args = {"check_same_thread": False} if db_url.startswith("sqlite") else {}
-    engine = create_engine(db_url, connect_args=connect_args)
+    
+    if db_url.startswith("postgresql"):
+        engine = create_engine(db_url, connect_args=connect_args, pool_pre_ping=True, pool_recycle=300)
+    else:
+        engine = create_engine(db_url, connect_args=connect_args)
+        
     Base.metadata.create_all(engine)
     return engine
 
