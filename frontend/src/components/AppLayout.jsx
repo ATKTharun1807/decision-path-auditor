@@ -290,62 +290,7 @@ export default function AppLayout({ children, title = 'AI Mission Control' }) {
           {children}
         </main>
 
-        {/* ── Floating AI Assistant (Bottom Right) ────────────────────────── */}
-        <div className="fixed bottom-6 right-6 z-40">
-          {!aiAssistantOpen ? (
-            <button
-              onClick={() => setAiAssistantOpen(true)}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-full bg-[#0EA5A4] text-white font-bold text-xs shadow-aurora-lg hover:shadow-glow-teal hover:scale-105 transition-all duration-200 border border-teal-400/30"
-            >
-              <Bot className="w-4 h-4 animate-bounce" />
-              <span>Ask AI Copilot</span>
-            </button>
-          ) : (
-            <div className="w-80 sm:w-96 bg-white border border-slate-200/90 rounded-2xl shadow-floating overflow-hidden flex flex-col h-96">
-              
-              {/* Header */}
-              <div className="px-4 py-3 bg-[#0EA5A4] text-white flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Bot className="w-4 h-4" />
-                  <span className="font-heading font-bold text-xs">Audit Copilot</span>
-                </div>
-                <button onClick={() => setAiAssistantOpen(false)} className="hover:opacity-80 p-0.5">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
 
-              {/* Chat Body */}
-              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 text-xs">
-                {chatMessages.map((m, i) => (
-                  <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`p-3 rounded-2xl max-w-[85%] leading-relaxed ${
-                      m.role === 'user' 
-                        ? 'bg-[#0EA5A4] text-white font-medium rounded-tr-none shadow-xs' 
-                        : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none shadow-xs'
-                    }`}>
-                      {m.text}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Input Footer */}
-              <form onSubmit={handleAiSubmit} className="p-2 bg-white border-t border-slate-200 flex gap-2">
-                <input
-                  type="text"
-                  placeholder="e.g. Show rejected sessions today…"
-                  className="aurora-input text-xs py-2"
-                  value={aiPrompt}
-                  onChange={e => setAiPrompt(e.target.value)}
-                />
-                <button type="submit" className="btn-aurora p-2 text-xs">
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-
-            </div>
-          )}
-        </div>
 
       </div>
 
