@@ -6,7 +6,6 @@ import Login        from './pages/Login';
 import Dashboard    from './pages/Dashboard';
 import Sessions     from './pages/Sessions';
 import Policies     from './pages/Policies';
-import Agents       from './pages/Agents';
 import SettingsPage from './pages/Settings';
 import TimelineView from './pages/TimelineView';
 
@@ -45,7 +44,6 @@ export default function App() {
         <Route path="/dashboard"   element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/sessions"    element={<PrivateRoute><Sessions /></PrivateRoute>} />
         <Route path="/policies"    element={<PrivateRoute><Policies /></PrivateRoute>} />
-        <Route path="/agents"      element={<PrivateRoute><Agents /></PrivateRoute>} />
         <Route path="/settings"    element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
         <Route path="/session/:id" element={<PrivateRoute><TimelineView /></PrivateRoute>} />
 

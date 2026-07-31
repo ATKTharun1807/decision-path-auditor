@@ -13,10 +13,8 @@ import LiveExecutionModal from './LiveExecutionModal';
 /* ─── Aurora Command Center Navigation ─────────────────── */
 const NAV = [
   { icon: '🏠', label: 'Dashboard',     path: '/dashboard'  },
-  { icon: '🧠', label: 'Decision Flow', path: '/session/sess-a0dd38bd2155' },
   { icon: '📂', label: 'Sessions',      path: '/sessions'   },
   { icon: '🛡', label: 'Policies',      path: '/policies'   },
-  { icon: '🤖', label: 'AI Agents',     path: '/agents'     },
   { icon: '⚙', label: 'Settings',      path: '/settings'   },
 ];
 
